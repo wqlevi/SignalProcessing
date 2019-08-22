@@ -1,3 +1,7 @@
+% This is for testing only, authered by @wqlevi
+% Revisal time: 22-08-2019
+% you can load your data by changing here
+
 load rsfmri_13.mat
 
 fs = channels{1,3}.samples_per_second; % sampling rate
