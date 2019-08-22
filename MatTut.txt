@@ -1,0 +1,66 @@
+****************I/O***********************
+fscanf(filename,format,sizeA) // read the file with 'filename', and its 'format' then push data into a vector with 'sizeA'(sizeA should be integral or [m n]format, whichi means m row and n collumn vector).
+
+feof(filename) //check if pointer is at end of document 
+fopen(finename,'w') // 'w' denotes writing authority, 'r' denotes read only
+fwrite(filename,A,precision) // write binary file A into filename
+fprintf(filename,format,A) // write text file into filename.
+[f,p] = uigetfile('filename') // This function shows a UI interface to select file.
+[path,name,extension] = fileparts(filename) //return [path,name,extensio] of a 'filename'
+[file,path] = uigetfile('filter','title','fileformat'); //open a UI window to select files respect to its criteria
+saveas(file,filename,format)  //save file w.r.t. it's format and name.
+***************data type***************************
+
+rand(n,m) // return a random value between 0,1 with n*m dimensional vector.
+randi(A,n,m) // Return a n*m dimensional matrix with random number ranges inside A.
+randn(n) // return a random n*n matrix subject to Normal distribution.
+ischar(A) //Judge if string A is characters, retures 1; else while 0.
+fgetl(file) // Take out lines of characters, and delete '\n' inside.
+readtable(filename) // will automatically detect and categorize the data in table.
+
+**************Strings*********************************
+[A,B] = strtok(C,'char') // Divide string by 'char', 
+			 //push former str to A, later to B, C is the targeting string.
+A = 'Hello World'        // Here A is actually a vector.
+strcat(a,b)              // This function will combine string a and b in series.
+[var1,var2] = ismember(A,B,'row') //to see if element in A also appears in B, returen 0 or 1 to indicate each row to var1; pass location of 				  //corresponding row of same in var2
+a = [1;2;3;4]   // display in rows
+a = [1,2,3,4]   // display in columns
+strfind(str,'pattern') //find out the index of appearance of 'pattern'
+A = linspace(1,10,5)  //create a array with 5 element, ranging from 1 to 10
+	
+
+**************Syntax***************************************
+// The name of the function should be same as its .m file name.
+// Usually () is used for index, [] for vector, and {} for cell.
+// When using cell, {n;m;k} denotes elements inside cell 3*1 dimensional, including: n,m,k
+// When using cell,(n,m,k) denotes n*m*k dimensional cell matrix
+// Since the mechanism of Matlab ploting is fitting points  into curves, the sampling rate will have influence on accuracy of curves.
+// 'Return' is used when hope to terminate program in advance
+// To save data as: 'save datafile.mat data'
+
+**************Attribute of data*********************************
+length(x) //return length of the vector X.
+whos A //observe attribute information of A.
+
+*************Plot**************************************************
+subplot(n,m,p) //divide whole page into n*m subdomain, p denotes the index of current plot
+stem(A) //depict discrete diagram of data A.
+plot(A,'LineWidth',3) //plot the curve with linewidth=3
+legend('height','width','length')  //add legend to the plot
+loglog(x,y)  //to plot a log and log coordinates
+imagesc(A)  //display matrix/ array A to colorred graph with each color for values.
+
+*************Matrix***********************************
+
+A = [7 8] or A = [7,8] // express matrix of [7 8]
+A = (1:10)'  //create a transformed matrix from 1 to 10
+A .* A // matrix A times A with element-to-element multiply
+A > 3  // test if each element of matrix A > 3
+A = A1(A1 < 4)  //take out each element inside A1 matrix that is less than 4
+A = (B1(A1<4))  // returns elements with corresponding location as the ones in A1<4
+size(A,n)  // return the Nth dimension of matrix A, e.g. A is a [3*2] matrix, size(A,1) = 3; size(A,2) = 2, size(A,3) = 1. 
+abs(a)  // hereby a stands for a complex number, the function will return amplitude of this complex number.
+ 
+
+
