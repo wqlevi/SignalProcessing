@@ -28,6 +28,9 @@ a = [1;2;3;4]   // display in rows
 a = [1,2,3,4]   // display in columns
 strfind(str,'pattern') //find out the index of appearance of 'pattern'
 A = linspace(1,10,5)  //create a array with 5 element, ranging from 1 to 10
+Y = floor(x)  // return approximate value of x to integer to negative infinate direction.
+Y = ceil(x)  // return approximate value of x to integer to positive infinate direction.
+[N,D] = rat(X) // divide matrix X into two integer matrix N./D
 	
 
 **************Syntax***************************************
@@ -61,6 +64,10 @@ A = A1(A1 < 4)  //take out each element inside A1 matrix that is less than 4
 A = (B1(A1<4))  // returns elements with corresponding location as the ones in A1<4
 size(A,n)  // return the Nth dimension of matrix A, e.g. A is a [3*2] matrix, size(A,1) = 3; size(A,2) = 2, size(A,3) = 1. 
 abs(a)  // hereby a stands for a complex number, the function will return amplitude of this complex number.
+[row,col] = find(logic expression)  //return [row,col] of such logical expression in a matrix.
+A(:)  // transform 2-D matrix into 1-D row of array.
+[value,index] = min(A(:))  // return value and 1-D index of minimum value of matrix.
+[row,col] = ind2sub(size(A),index); // return row and column index of minimum value.
  
 
 
