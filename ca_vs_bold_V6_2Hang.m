@@ -2,12 +2,11 @@
 
 clear
 
-fmri_path_data = 'C:\Users\wangqi\Desktop\03242019\fmri_analyzed03242019';
-ca_path_data = 'C:\Users\wangqi\Desktop\03242019\Calcium_data03242019';
+fmri_path_data = 'D:\05302019_Hang\05302019_analyzed';
+ca_path_data = 'D:\05302019_Hang\05302019_ca';
 addpath('C:\Users\wangqi\Documents\Lab\Demo\Calcium');
 mode_paradigm = 'rs'; % 'rs' | 'task'
 mode_cortex = 'voxels'; % 'voxels' | 'layers'
-data_date = string('03242019');
 do_convolve = 0; % do you want to convolve all ca feature signals with an HRF kernel?
 
 %%
@@ -17,11 +16,13 @@ chan_ca = 7; % channel with calcium data
 
 ws = 2^14; % spectrogram window length. Needs to be specified beforehand because of specific matching procedure.
 
-n_plots = 21; % 21 trails will be present, if more trails.
+
 
 axis_width = 2;
 font_size=10;
 
+boundary_shifts = 1;
+offset = 0;
 %% scan params
 if TR50 == 1
     TR = 0.05; %s
@@ -41,29 +42,34 @@ fmri_dummy = ones(total_scan_time*(1/TR), 1);
 switch mode_paradigm
     case 'task'              
 %           runs = [73 75 77 79 81]; % task-fMRI
-        runs = [38 43 45 50 56 58 60 62 63 68];
-%           runs = [16 17 20 23 25 27 29 31 33 35 39 41 43 45 47 49 51 53 55 59 61 63 65 67 69 71 73 75 77 79 81];
-%         runs = [38];
-%         runs = [61];
+%         runs = [17 24 30 31 34 36 43];%10092018
+%           runs = [20];
+%         runs = [16 17 20 23 25 27 29 31 33 35 36 39 41 43 45 47 49 51 53 55 57 59 61 63 65 67 69 71 73 75 77 79 81];%05302019
+%         runs = [38 43 45 50 56 58 60 62 63 68];%03242019
+%         runs = [15 18 20 23 25 28 31 34 35 37 39 41 43 45 47 49 52 54 56 58 59];%05232019
         ca_path_mode = ca_path_data;
 %         path_suffix = '_TK.mat';
         path_suffix = '.mat';
     case 'rs'
 %         runs = [32];
 %         runs = [17 19  21  22 24 26 27 32 33 36 38 40 42 44 48 50 51 53 55 57]; %10062018, rs-fMRI
-        runs = [35 37 39 44 49 51 57 59 64 66 69]; %03242019
-%         runs = [15 19 22 24 26 28 30 32 34 36 37 38 40 42 44 46 48 50 52 54 56 57 58 60 62 64 66 68 70 72 74 76 78 80];
+%         runs = [35 37 39 44 49 51 57 59 64 66 69]; %03242019
+%         runs = [23 30 31 32 33 36 37];
+%         runs = [17 19 21 22 24 26 27 32 33 36 38 40 42 44 46 48 50 51 53 55 57];%05232019
+        runs = [15 19 22 24 26 28 30 32 34 37 38 40 42 44 46 48 50 52 54 56 58 60 62 64 66 68 70 72 74 76 78 80];%05302019
         ca_path_mode = ca_path_data;
 %         path_suffix = '_RS.mat';
         path_suffix = '.mat';
 end
 
+n_plots = length(runs); % # trails will be present, if more trails.
 if length(runs)<n_plots % what's the purpose??
     n_plots = length(runs);
 end
 
+
 %% load signals
-disp('load signals')
+disp('load signals')% If no error, then all data length are satisfied.
 for ir = 1 : length(runs)
     %% [fmri]load 3 slice data for all runs
     for is = 1:n_slices
@@ -71,12 +77,13 @@ for ir = 1 : length(runs)
 %             '/line_scanning_data_s', num2str(is), '.mat']);
    tmp = load([fmri_path_data, '\', num2str(runs(ir)), '\Results_Slice', num2str(is), ...
             '\line_scanning_data_s', num2str(is), '.mat']);
-        fmri{is}{ir} = abs(tmp.total_cortical_depth_map)';
+        fmri{is}{ir} = abs(tmp.total_cortical_depth_map)'; % why abs()? both neg/pos value exist.
     end
     %% get calcium signal exactly matching the fmri signal
 %     data_orig = load([path_data, path_mode, 'scan_',num2str(runs(ir)), path_suffix]);
-    path_data_ca='C:\Users\wangqi\Desktop\03242019\Calcium_data03242019';
-    data_orig = load([path_data_ca, '\scan_',num2str(runs(ir)), path_suffix]);
+    path_data_ca = ca_path_data;
+    data_orig = load([path_data_ca, '\scan_',num2str(runs(ir)),path_suffix]);%03242019 
+%     data_orig = load([path_data_ca, '\scan_',num2str(runs(ir)),'_TK', path_suffix]);
     [data_match, fmri_dummy, beg, fin] = match_acq_fmri(data_orig, fmri_dummy, TR, b4trig);
     ca_match{ir} = -(data_match.channels{chan_ca}.data)'; % Reversed raw calcium data after match
     fs = (data_match.channels{chan_ca}.samples_per_second); % Freq. of calcium sampling
@@ -118,8 +125,8 @@ for is = 1:n_slices
     fmri_ccat{is} = cell2mat(fmri{is}');
     mean_slice = mean(fmri_ccat{is}, 1);
     mean_slice = mean_slice - min(mean_slice);
-    half_intens = max(mean_slice)/2;
-    i_half_ccat(is) = find(mean_slice>half_intens, 1);
+    half_intens = max(mean_slice)/2; % half amplitude( thru out voxels)
+    i_half_ccat(is) = find(mean_slice>half_intens, 1);% half index(cortical voxel index)
 end
 
 for ir = 1:length(runs)
@@ -131,18 +138,21 @@ for ir = 1:length(runs)
         i_half(is,ir) = find(mean_slice>half_intens, 1);
         
         % shift the cortex lower by one voxel
-        i_half(is,ir) = i_half(is,ir) + 1;
+        i_half(is,ir) = i_half(is,ir) + boundary_shifts;
     end
 end
 
 %% plot cortex borders
+
 for is =1:n_slices
+    
     h = figure; set(h, 'WindowStyle', 'docked', 'NumberTitle', 'off', 'Name', ['ctx border ', num2str(is)])
     imagesc(1:size(fmri_ccat{is}, 1), 1:size(fmri_ccat{is}, 2), fmri_ccat{is}'), hold on
     plot(1:size(fmri_ccat{is}, 1), ones(1, size(fmri_ccat{is}, 1))*i_half_ccat(is), 'w', 'LineWidth', 2)
     plot(1:size(fmri_ccat{is}, 1), ones(1, size(fmri_ccat{is}, 1))*(i_half_ccat(is)+41), 'w', 'LineWidth', 2)
-    for ir = 1:length(runs)
+    for ir = 1:length(runs) % trail specific boundary
         len = size(fmri{is}{ir}, 1);
+%         i_half(is,ir) = i_half(is,ir)+offset;
         plot(1+(ir-1)*len:ir*len, ones(1, len)*i_half(is,ir), 'r', 'LineWidth', 2)
         plot(1+(ir-1)*len:ir*len, ones(1, len)*(i_half(is,ir)+41), 'r', 'LineWidth', 2)
     end
@@ -182,12 +192,13 @@ end
 % %     end
 % % end
 
-%% regress polynomial of degree n from fMRI data
+%% regress polynomial of degree n from fMRI data]
+disp('doing regression...');
 for is=1:n_slices
     for ir=1:length(runs)
         for iv = 1:size(ctx{is}{ir}, 2)
-            p = polyfit(t_fmri, ctx{is}{ir}(:, iv), 3);
-            ctx{is}{ir}(:, iv) = ctx{is}{ir}(:, iv) - polyval(p, t_fmri);
+            p = polyfit(t_fmri, ctx{is}{ir}(:, iv), 3); % 3rd order polynomial fitting
+            ctx{is}{ir}(:, iv) = ctx{is}{ir}(:, iv) - polyval(p, t_fmri); %ctx minus polyfitted each of 6400 dots 
         end
     end
 end
@@ -227,7 +238,7 @@ for ir = 1:length(runs)
     [S,F,T] = spectrogram(ca_long{ir}, win, ovrl, nfft, fs);
     
     if ir <= n_plots
-        f_int = F < 15 & F>0.5;
+        f_int = F < 15 & F>0.5; % ca = .5~15 Hz
         h = figure; set(h, 'WindowStyle', 'docked', 'NumberTitle', 'off', 'Name', ['spectrogram r', num2str(runs(ir))])
         %         imagesc(T, F(f_int), log10(abs(S(f_int, :)))), box off
         imagesc(T, F(f_int), abs(S(f_int, :))), box off
@@ -253,15 +264,18 @@ f_high_1 = 0.1;
 [b1, a1] = butter(1, [f_low f_high_1]/((1/TR)/2), 'bandpass');
 for ir = 1:length(runs)
     len = length(ca_freq_15{ir});
+    
+    %[QUESTIONS] why flilr????????
     freq_band_tmp = [fliplr(ca_freq_15{ir}(1:round(len/4))); ca_freq_15{ir}; ...
-        fliplr(ca_freq_15{ir}(end-round(len/4)+1:end))];
-    ca_freq_15{ir} = filtfilt(b1, a1, freq_band_tmp);
+        fliplr(ca_freq_15{ir}(end-round(len/4)+1:end))];% concatenate origion with 1/4 in front as at tail, to make signal continuous for zero phase filtering
+    
+    ca_freq_15{ir} = filtfilt(b1, a1, freq_band_tmp);% zero phase filtering
 
     
-    ca_freq_15{ir} = ca_freq_15{ir}(round(len/4)+1 : end-round(len/4)); %take quarter of signal to do filtering to avoid artifacts
+    ca_freq_15{ir} = ca_freq_15{ir}(round(len/4)+1 : end-round(len/4)); %cut only center part to use, avoiding discontinuity.
 
 end
-
+% Here ca_freq_15 is already 0.01~0.1 Hz
 %% filter ca
 disp('filter Ca')
 f_low = 0.01;
@@ -276,7 +290,7 @@ f_high_2 = 20;
 for ir = 1:length(runs)
     len = length(ca_match{ir});
     ca_tmp = [fliplr(ca_match{ir}(1:round(len/4))); ca_match{ir}; ...
-        fliplr(ca_match{ir}(end-round(len/4)+1:end))];
+        fliplr(ca_match{ir}(end-round(len/4)+1:end))];  %???
     ca_f1{ir} = filtfilt(b1, a1, ca_tmp);
     ca_f2{ir} = filtfilt(b2, a2, ca_tmp);
     %     ca_f3{ir} = filtfilt(b3, a3, ca_tmp);
@@ -291,9 +305,10 @@ for ir = 1:length(runs)
 end
 %% list of variables for xcorr 
 % modi.1
-xc{1} = ca_f1_ds;
-xc{2} = ca_f2_ds;
-xc{3} = ca_freq_15;
+% ??? What's difference between 1st and 3rd.
+xc{1} = ca_f1_ds; % 0.01~0.1Hz
+xc{2} = ca_f2_ds; % 0.01~20Hz
+xc{3} = ca_freq_15; % 0.01~0.1Hz
 
 %% convolve all ca sigs
 % based on Patricia's script
@@ -410,6 +425,7 @@ end
 
 %% lag curves at each voxel 1D
 cd (ca_path_data)
+disp('Xcorr curve ploting...');
 for ir = 1:length(runs)
 % modi.5
         for ic =1:length(xc)
@@ -442,29 +458,21 @@ for ir = 1:length(runs)
             end
         end
     %%%%%%%%%fMRI ave%%%%%%%%%%%%%%%%%%%%
-         avg = zeros(200,1);
-         figure,
+%          avg = zeros(200,1);
+%          figure,
     for is = 1:n_slices
-
-%         for i=1:32
-%             avg = avg+mean(ctx{is}{31}(1+(i-1)*200:i*200,:),2);
-%         end
-%         subplot(3,1,is);
-%         plot(avg);
-%         xlabel('time(s)');
-%         ylabel('amplitude');
-%         grid on;
-%         name_slice = sprintf('Averaged fmri signal in single scan(slice %d)',is);
-%         title(name_slice);
-%         locs_cell = num2cell(locs,[1 2]);
         locs_tbl = array2table(locs(:,:,is));
+        pks_tbl = array2table(pks(:,:,is));
         switch mode_paradigm 
             case 'task'
                 name_table = ([ca_path_data,'\xcorr_Scan_TK_slice.xlsx']);
+                name_table_pks = ([ca_path_data,'\xcorr_Scan_TK_Coeff.xlsx']);
             case 'rs'
                 name_table = ([ca_path_data,'\xcorr_Scan_RS_slice.xlsx']);
+                name_table_pks = ([ca_path_data,'\xcorr_Scan_RS_Coeff.xlsx']);
         end
         writetable(locs_tbl,name_table,'Sheet',is);
+        writetable(pks_tbl,name_table_pks,'Sheet',is);
 %         writematrix(locs_cell{is},'xcorr_Scan_TK_slice.xlsx','Sheet',is);%sheet for slice, x-axis for trails, y-axis for voxels
     end
      %%%%%%%%%%%%%ca_ave
@@ -472,12 +480,12 @@ for ir = 1:length(runs)
     for i=1:32
         avg = avg+mean(xc{3}{ir}(1+(i-1)*200:i*200,:),2);
     end
-    plot(avg);
-    xlabel('time(s)');
-    ylabel('amplitude');
-    grid on;
-    name_slice = sprintf('Averaged Calcium signal in single scan(%d)',ir);
-    title(name_slice);
+%     plot(avg);
+%     xlabel('time(s)');
+%     ylabel('amplitude');
+%     grid on;
+%     name_slice = sprintf('Averaged Calcium signal in single scan(%d)',ir);
+%     title(name_slice);
 %     saveas(f_ca_ave,name_slice,'png');
     
     %       %Finished Qi's editing 
@@ -525,11 +533,11 @@ axis_voxels = linspace(1,length(locs(:,1,1)),40);
 for ir=1:length(runs)
     for is = 1:n_slices
         subplot(1,3,is);
-        [p_c(ir,:),~,mu(:,ir)] = polyfit(axis_voxels,locs(:,ir,is)',6);% 6th order polynomial regression
-        f(ir,:) = polyval(p(ir,:),axis_voxels,[],mu(:,ir));
+        [p_c(ir,:,is),~,mu(:,ir,is)] = polyfit(axis_voxels,locs(:,ir,is)',6);% 6th order polynomial regression
+        f(ir,:,is) = polyval(p_c(ir,:,is),axis_voxels,[],mu(:,ir,is));
         hold on;
         grid on;
-        plot(f(ir,:),axis_voxels);
+        plot(f(ir,:,is),axis_voxels);
         set(gca,'Ydir','reverse');
         ylabel('Cortical Depth(voxels)');
         xlabel('Lag Time(s)');
@@ -551,6 +559,8 @@ for ir=1:length(runs)
         plot(y_fit(ir,:,is),axis_voxels,'r-')
         plot(y_fit(ir,:,is)+delta(ir,:,is),axis_voxels,'m--',y_fit(ir,:,is)-delta(ir,:,is),axis_voxels,'m--');
         set(gca,'Ydir','reverse');
+        xlabel('Lag Time(s)');
+        ylabel('Cortical Depth(Voxels)');
         hold off;
     end
 end
@@ -698,7 +708,7 @@ for ir = 1:n_plots
     h = figure; set(h, 'WindowStyle', 'docked', 'NumberTitle', 'off', ...
         'Name', ['fmri ca-f-001-20 s', num2str(is), ' r', num2str(runs(ir))])
     for is = 1:n_slices
-        s_mean = mean(ctx{is}{ir}, 2);
+        s_mean = mean(ctx{is}{ir}, 2); % average 40 voxels into 1.
         subplot(3,1,is)
         plot(t_fmri, zscore(s_mean)), hold on
         plot(t_fmri, zscore(xc{2}{ir}), 'LineWidth', 2)
@@ -720,3 +730,6 @@ for ir = 1:n_plots
     %         title(['slice ', num2str(is),'   cc: ', num2str(cc(l==0)), '   max lag: ', num2str(l(ml))])
     %     end
 end
+
+%% File I/O
+
