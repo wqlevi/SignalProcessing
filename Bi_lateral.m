@@ -1,6 +1,7 @@
 %% Initializing parameters
 addpath('C:\Users\wangqi\Documents\Lab\Demo\Fid2plot') % the path where Brucker functions were stored
-path = 'D:\16072020_yi\'; % targeted path of data 
+path = 'D:\14072020_yi\'; % targeted path of data 
+addpath('C:\Users\wangqi\Documents\Lab\Demo\Calcium');% some functions imported
 % path = 'D:\05232019\05232019_fmri_analyzed\20\fid';
 
 params.complex = 1;
@@ -13,16 +14,17 @@ cortex_depth = 2;% 2mm
 spatial_res = 0.1; % see `method` 'Spatial_resolution'
 len_cortex = cortex_depth/spatial_res; % cortex depth in samples
 depth_cc = 5;% 0.5 mm of corpus callosum
-cc_on = 1;% 0,w/o cc | 1,w/ cc
+cc_on = 0;% 0,w/o cc | 1,w/ cc
 
 % sampling rates;
 TR = 0.1;
 Fs = 1/TR;
 
-% scans = [44,46,50];
-scans = [91];
+scans = [44,46,50,53,68,69,70]; % 14072020
 
-state = 'evoked'; % 'evoked' | 'rs'
+% scans = [77,78,80,81,82,83,84,90,91];% 16072020
+
+ave = 0; % 1 | 0, 'ave' | 'rs'
 
 % I/O path:
 
@@ -37,22 +39,22 @@ for ir = 1:length(scans)
         fmri(ir,:,:,:,:) = squeeze(res);
 end
 %% Average trails(evoked only)
-% if state =='evoked'
-% fmri = squeeze(mean(fmri,1));
-% end
+if ave ==1
+fmri = squeeze(mean(fmri,1));
+end
+
 %% Formating fid
-% fmri = squeeze(res);
 
 nslice = size(fmri,4);
+% nslice = size(fmri,3);% ave ,size(,3)
 for ir = 1:length(scans)
     for is = 1:nslice
         fmri_slice{ir}{is} = squeeze(fmri(ir,:,:,is,:));
+%         fmri_slice{ir}{is} = squeeze(fmri(:,:,is,:));% ave
         slice_fftc{is} = fft2c(fmri_slice{ir}{is});
         slice_ifft{is} = ifft2c(slice_fftc{is});
         fmri_slice{ir}{is} = fftc(slice_ifft{is},2);
-    %     [why not?] how does the `reshape` function organize matrix?
-    %     fmri_slice{i} = reshape(slice_fftc{i},size(slice_fftc{i},1),(size(slice_fftc{i},2)*size(slice_fftc{i},3))); % [why?]by doing fft, the profile is more salient
-        for k = 1:32
+           for k = 1:32
             for j = 1:200
                 fmri_cm(:,k+32*(j-1)) = abs(fmri_slice{ir}{is}(:,k,j));
             end
@@ -61,12 +63,17 @@ for ir = 1:length(scans)
     
     end
 end
+if ave == 1
+[nX, nY, ndur] = size(squeeze(fmri(:,:,is,:)));    
+else
 [nX, nY, ndur] = size(squeeze(fmri(ir,:,:,is,:))); % nX = cortical depth | nY = epochs | nSlice = duration of epoch
+end
 t_fmri = 0:TR:(nY*ndur-1)*TR; % t fmri initialization
 % tSNR plot
 for ir = 1:length(scans)
     for is = 1:nslice
-        h = figure; set(h, 'WindowStyle', 'docked', 'NumberTitle', 'off', 'Name', ['tSNR '])
+        h = figure; 
+        set(h, 'WindowStyle', 'docked', 'NumberTitle', 'off', 'Name', ['tSNR '])
         plot(linspace(1,nX,nX),abs(mean(fmri_tc{ir}{is},2)));
         xlabel('cortical depth(mm)');
         xlim([1,128]);
@@ -176,6 +183,7 @@ for ir = 1:length(scans)
         set(gcf,'Position',[500,500,600,300]);
     end
 end
+
 %% Filtering(for 2D BOLD map)
 
 order    = 4096; 
@@ -306,10 +314,10 @@ for ir = 1:length(scans)
     xlabel('time(s)');
     % xticklabels({'0 sec','160 sec','320 sec','480 sec','640 sec'})
     ylabel('fMRI a.u.');
-    title([title_name,'trail#',num2str(scans(ir)),' slice#',num2str(is)]);
+    title([title_name,' #trail ',num2str(ir),' slice#',num2str(is)]);
     set(gcf,'Position',[500 500 980 300 ]);
     box off;
-    saveas(h,[title_name,'trail#',num2str(scans(ir)),' slice#',num2str(is),'.jpg']);
+    saveas(h,[title_name,' trail#',num2str(scans(ir)),' slice#',num2str(is),'.jpg']);
     end
 end
 
@@ -344,18 +352,27 @@ for ir = 1:length(scans)
 end
 % spectral analysis
 for is = 1:2
-    test(is,:) = squeeze(mean_slice_1(ir,is,:));
-    test(is,:) = test(is,:) - mean(test(is,:));
-    h = figure;
-    [pxx,f] = pwelch(test(is,:),size(test,2),0,[],1/TR);
-    plot(f(f>0&f<0.12),pxx(f>0&f<0.12,:));
-    xlim([f(2),0.12]);
-    ylim([0,50]);
-    xlabel('frequency(Hz)');
-    ylabel('intensity dB');
-    title(['spectrum of slice#',num2str(is)]);
-    saveas(h,['spectrum of slice#',num2str(is)]);
+   h = figure;
+for ir = 1:length(scans)
+
+        test(ir,is,:) = squeeze(mean_slice_1(ir,is,:));
+        test(ir,is,:) = test(ir,is,:) - mean(test(ir,is,:));
+     
+        [pxx,f] = pwelch(squeeze(test(ir,is,:)),hamming(size(test,3)/4),0,[],1/TR);
+        plot(f(f>0&f<0.12),10*log10(pxx(f>0&f<0.12,:)),'Color','k');
+        hold on;
+        xlim([f(2),0.12]);
+%         ylim([0,50]);
+        xlabel('frequency(Hz)');
+        ylabel('intensity (dB/Hz)');
+        title(['spectrum of trail#',num2str(ir),' slice#',num2str(is)]);
+%         title(['spectrum of all slice#',num2str(is)]);
+        
 end
+    saveas(h,['spectrum of slice#',num2str(is),'.jpg']);
+end
+
+
 %% Power spectrogram[NOT YET COMPLETED]
 % NFFT = 2^12;
 % window = 1*Fs; % 1sec of windowing
@@ -371,3 +388,38 @@ end
 % title('fMRI spectrogram(win = 1 sec, no overlap)');
 % box off;
 % end
+
+%% Error bar plot[SNR]
+% type in intensity of each ROI:
+roi(:,1) = [164,175,165,191];
+roi(:,2) = [24.5,25.5,49.1,71.4];
+roi(:,3) = [4.7,5.12,2.7,2.84];
+
+% function handle of SNR
+snr = @(s,b) (s-b)/sqrt(b);
+
+% calculation of SNR
+for j = 1:3% 3 rois
+    for i = 1:size(roi,1) % trails 
+        snr_re(i,j) = snr(roi(i,j),roi(i,3));
+    end
+end
+
+for i = 1:3
+stdv(:,i) = std(roi(:,i));
+ave(:,i)  = mean(roi(:,i));
+snr_std(:,i) = std(snr_re(:,i));
+snr_ave(:,i) = mean(snr_re(:,i));
+end
+
+h = figure;
+barwitherr(cat(3,zeros(3,2),[stdv',snr_std'...
+]),[1,2,3 ],[ave',snr_ave'],'LineWidth',2,'BarWidth',0.5);% cat(N,dim1,dim2): cat along Nth dim
+set(gca,'XTickLabel',{'ROI 1','ROI 2','ROI 3'});
+legend('Intensity','SNR');
+ylabel('Intensity');
+grid on;
+box off;
+title('SNR statistics');
+colormap summer;
+saveas(h,'snr plot.jpg');
