@@ -11,7 +11,7 @@ fmri_path = 'D:\03242019\fmri_analyzed03242019';
 % ca_path = 'D:\05302019_Hang\05302019_ca';
 ca_path = 'D:\03242019\Calcium_data03242019';
 % ca_path = 'D:\HANG\10062018rsesting-state\calcium_data';
-mkdir('C:\Users\wangqi\Desktop\Neurovascular coupling\0324\figs');
+% mkdir('C:\Users\wangqi\Desktop\Neurovascular coupling\0324\figs');
 savepath = 'C:\Users\wangqi\Desktop\Neurovascular coupling\0324\figs';
 addpath('C:\Users\wangqi\Documents\Lab\Demo\Calcium');
 
@@ -22,8 +22,7 @@ fmri_duration = 640;
 
 scans = [35 37 39 44 49 51 57 59 64 66 69];%03242019
 % scans = [36,51,55,57,59,61,63,65,69,71];%10062018
-% scans = [15 19 22 24 26 28 30 32 34 37 38 40 42 44 46 48 50 52 54 56 58
-% 60 62 64 66 68 70 72 74 76 78 80];%05302019
+% scans = [15 19 22 24 26 28 30 32 34 37 38 40 42 44 46 48 50 52 54 56 58 60 62 64 66 68 70 72 74 76 78 80];%05302019
 % scans = [17 19 21 22 24 26 27 32 33 36 38 40 42 44 46 48 50 51 53 55 57];%05232019
 fmri_dummy = ones(fmri_duration/TR,1);
 chan_ca = 7;
@@ -110,8 +109,40 @@ for ir = 1:length(scans)
     ca_match{ir} = detrend(ca_match{ir});
 end
 
+
+ir = 5;
+is = 3;
+[b1,a1] = butter(2,0.01/((1/TR)/2),'low');
+freq_band_tmp = [fliplr(fmri_tc{ir}{is}(:,1:round(len_fmri/4))'); fmri_tc{ir}{is}'; ...
+            fliplr(fmri_tc{ir}{is}(:,end-round(len_fmri/4)+1:end)')];% extend signal for filtering
+        fmri_filt{ir}{is} = filtfilt(b1, a1, freq_band_tmp);
+        fmri_filt{ir}{is} = fmri_filt{ir}{is}(round(len_fmri/4)+1 : end-round(len_fmri/4));
+
+
+test = fmri_tc{ir}{is} - fmri_filt{ir}{is}'; % filtered off <0.01Hz
+[b2,a2] = butter(1,[0.01,0.1]/((1/TR)/2),'bandpass');
+freq_band_tmp = [fliplr(test(:,1:round(len_fmri/4))'); test'; ...
+            fliplr(test(:,end-round(len_fmri/4)+1:end)')];% extend signal for filtering
+        test_filt = filtfilt(b2, a2, freq_band_tmp);
+        test_filt = test_filt(round(len_fmri/4)+1 : end-round(len_fmri/4));
+
+
+test1 = downsample(test_filt,1/TR);
+[pxx_test,lag] = xcorr(zscore(ca_pb_filt_new{5}(:,5)),zscore(test1),10,'coeff');
+plot(lag,pxx_test);
+xlabel('lagtime(s)');
+ylim([-1,1]);
+
+plot(1:640,test1,1:640,ca_pb_filt_new{5}(:,4))
+
+
+
+
+
+
 % fmri time course each slice
-for ir = 1:length(scans)
+% for ir = 1:length(scans)
+for ir = 5
     for is = 1:nslice
         h = figure;
         plot(t_fmri,zscore(fmri_tc{ir}{is}),'r-');
@@ -122,7 +153,7 @@ for ir = 1:length(scans)
         set(gcf,'Position',[500 500 980 300 ]);
         title(['fmri trail ',num2str(ir),' slice ',num2str(is)]);
         box off;
-        saveas(h,['fmri raw trail ',num2str(ir),' slice ',num2str(is),'.jpg']);
+%         saveas(h,['fmri raw trail ',num2str(ir),' slice ',num2str(is),'.jpg']);
     end
 end
 % demean ca itself
@@ -136,7 +167,7 @@ for ir = 1:length(scans)
         ylabel('Ca^2^+ \DeltaF/F');
         set(gcf,'Position',[500 500 980 300 ]);
         title(['Ca^2^+ timecourse trail ',num2str(ir)]);
-        saveas(h,['Ca timecourse trail ',num2str(ir),'.jpg']);
+%         saveas(h,['Ca timecourse trail ',num2str(ir),'.jpg']);
 end
 %% spectral analysis(spectrogram & timefreq)
 % ca spectrogram
@@ -443,9 +474,10 @@ trails = [2,3,5,7,8,9,12,14,15,16,17,18,23,24,25,26,27,30,31];
 % xcorr (fmri & ca_power profile) [averaged] 
 for is = 1:nslice
       h=figure;
-%     for ir = 1:length(scans)
+    for ir = 1:length(scans)
+% for ir = trails;
 
-    for ir = trails
+%     for ir = trails
         test_fmri(ir,is,:) = downsample(fmri_filt{ir}{is},1/TR);
         [xcf_test(ir,is,:),lag_2] = xcorr(zscore(ca_pb_filt_xc{ir}),zscore(squeeze(test_fmri(ir,is,:))),10,'coeff');% for 0-5Hz band
         h1= plot(lag_2,squeeze(xcf_test(ir,is,:)),'Color',[.9,.9,.9]);
@@ -469,7 +501,7 @@ for is = 1:nslice
         legend('Positive lag','Negative lag(Ca leading)');
     end
 % saveas(h,['Negative correlated trails slice# ',num2str(is),'.jpg']);
-% saveas(h,['xcorr slice',num2str(is),'.jpg']);
+saveas(h,['xcorr slice',num2str(is),'.jpg']);
 end
 % xcorr (fmri & ca_power profile) in [averaged] error map
 for is = 1:nslice
@@ -494,7 +526,7 @@ end
 for i = 1:5
   h = figure;
     for ir = 1:length(scans)
-% for ir = trails
+% for ir = 5
         
         fmri_dw{ir} = downsample(fmri_filt{ir}{1},1/TR);
         [coff(ir,:,i),lag_3] = xcorr(zscore(ca_pb_filt_new{ir}(:,i)),zscore(squeeze(fmri_dw{ir})),10,'coeff');
@@ -518,10 +550,11 @@ for i = 1:5
 end
     text(0.8,9,'slice 1');
     title(['Ca^2^+(',num2str(i-1),'~',num2str(i),'Hz) power band & fMRI correlation']);
-    saveas(h,['Ca^2^+(',num2str(i-1),'~',num2str(i),'Hz) power band & fMRI correlation.jpg']);
+%     saveas(h,['Ca^2^+(',num2str(i-1),'~',num2str(i),'Hz) power band & fMRI correlation.jpg']);
 end
 
-% trails = [5,6,7,8,9,10,12,14,15,16,17,18,19,20,21];%05232019[]
+% trails = [5,6,7,8,9,10,12,14,15,16,17,18,19,20,21];%05232019
+trails = [1,2,3,4,5,6];
 clear  locs_pp_new
 % freq dependent correlation 1D
 % for ir = 1:length(scans)
