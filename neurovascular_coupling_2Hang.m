@@ -5,14 +5,14 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fmri_path = 'D:\05232019\05232019_fmri_analyzed';
 % fmri_path = 'D:\05302019_Hang\05302019_analyzed';
-fmri_path = 'D:\03242019\fmri_analyzed03242019';
-% fmri_path='D:\HANG\10062018rsesting-state\fmri_data';
+% fmri_path = 'D:\03242019\fmri_analyzed03242019';
+fmri_path='D:\HANG\10062018rsesting-state\fmri_data';
 % ca_path = 'D:\05232019\05232019_ca';
 % ca_path = 'D:\05302019_Hang\05302019_ca';
-ca_path = 'D:\03242019\Calcium_data03242019';
-% ca_path = 'D:\HANG\10062018rsesting-state\calcium_data';
+% ca_path = 'D:\03242019\Calcium_data03242019';
+ca_path = 'D:\HANG\10062018rsesting-state\calcium_data';
 % mkdir('C:\Users\wangqi\Desktop\Neurovascular coupling\0324\figs');
-savepath = 'C:\Users\wangqi\Desktop\Neurovascular coupling\0324\figs';
+savepath = 'C:\Users\wangqi\Desktop\Neurovascular coupling\1006\figs';
 addpath('C:\Users\wangqi\Documents\Lab\Demo\Calcium');
 
 TR = 0.1;% 0.1s
@@ -20,8 +20,8 @@ Spatial_res = 0.05;
 prestim = 10;
 fmri_duration = 640;
 
-scans = [35 37 39 44 49 51 57 59 64 66 69];%03242019
-% scans = [36,51,55,57,59,61,63,65,69,71];%10062018
+% scans = [35 37 39 44 49 51 57 59 64 66 69];%03242019
+scans = [36,51,55,57,59,61,63,65,69,71];%10062018
 % scans = [15 19 22 24 26 28 30 32 34 37 38 40 42 44 46 48 50 52 54 56 58 60 62 64 66 68 70 72 74 76 78 80];%05302019
 % scans = [17 19 21 22 24 26 27 32 33 36 38 40 42 44 46 48 50 51 53 55 57];%05232019
 fmri_dummy = ones(fmri_duration/TR,1);
@@ -34,7 +34,7 @@ nfreq = 5;
 %% load signals
 % load calium
 for ir = 1:length(scans)
-    data_ca_orig = load([ca_path,'\scan_',num2str(scans(ir)),'.mat']);
+    data_ca_orig = load([ca_path,'\scan_',num2str(scans(ir)),'_RS.mat']);
     [data_match,fmri_dummy,beg,fin] = match_acq_fmri(data_ca_orig,fmri_dummy,TR,prestim);
     ca_match{ir} = -(data_match.channels{chan_ca}.data)';
 end
@@ -51,14 +51,7 @@ for ir = 1:length(scans)
 end
 %% reshaping pre-process
 cd (savepath);
-% fmri trimming
-% for is = 1:nslice
-%     fmri_ccat{is} = cell2mat(fmri{is}');
-%     mean_slice = mean(fmri_ccat{is}, 2);
-%     mean_slice = mean_slice - min(mean_slice);
-%     half_intens = max(mean_slice)/2; % half amplitude( thru out voxels)
-%     i_half_ccat(is) = find(mean_slice>half_intens, 1);% half index(cortical voxel index)
-% end
+
 for ir = 1:length(scans)
     for is = 1:nslice
         mean_slice = mean(fmri{ir}{is}, 2);
@@ -110,30 +103,6 @@ for ir = 1:length(scans)
 end
 
 
-ir = 5;
-is = 3;
-[b1,a1] = butter(2,0.01/((1/TR)/2),'low');
-freq_band_tmp = [fliplr(fmri_tc{ir}{is}(:,1:round(len_fmri/4))'); fmri_tc{ir}{is}'; ...
-            fliplr(fmri_tc{ir}{is}(:,end-round(len_fmri/4)+1:end)')];% extend signal for filtering
-        fmri_filt{ir}{is} = filtfilt(b1, a1, freq_band_tmp);
-        fmri_filt{ir}{is} = fmri_filt{ir}{is}(round(len_fmri/4)+1 : end-round(len_fmri/4));
-
-
-test = fmri_tc{ir}{is} - fmri_filt{ir}{is}'; % filtered off <0.01Hz
-[b2,a2] = butter(1,[0.01,0.1]/((1/TR)/2),'bandpass');
-freq_band_tmp = [fliplr(test(:,1:round(len_fmri/4))'); test'; ...
-            fliplr(test(:,end-round(len_fmri/4)+1:end)')];% extend signal for filtering
-        test_filt = filtfilt(b2, a2, freq_band_tmp);
-        test_filt = test_filt(round(len_fmri/4)+1 : end-round(len_fmri/4));
-
-
-test1 = downsample(test_filt,1/TR);
-[pxx_test,lag] = xcorr(zscore(ca_pb_filt_new{5}(:,5)),zscore(test1),10,'coeff');
-plot(lag,pxx_test);
-xlabel('lagtime(s)');
-ylim([-1,1]);
-
-plot(1:640,test1,1:640,ca_pb_filt_new{5}(:,4))
 
 
 
@@ -190,8 +159,8 @@ for ir = 1:length(scans)
     h = figure;
     % Q1: should 'ntimesout' be chosen to same samples as fmri?
     % Q2: How does 'winsize' influence frequency resolution, indenpendent of NFFTs? 
-%     [tf,freq,time] = timefreq(ca_demean{ir},fs_ca,'winsize',win,'ntimesout',len_ca/win*2,'nfreqs',200,'freqs',[0.01,10]);
-    [tf,freq,time] = timefreq(ca_demean{ir},fs_ca,'ffttaper','none','winsize',win,'ntimesout',len_ca/win*2,'padratio',256,'freqs',[0,10]);
+    [tf,freq,time] = timefreq(ca_demean{ir},fs_ca,'wletmethod','dftfilt3','winsize',win,'ntimesout',len_ca/win*2,'padratio',256,'freqs',[0,10]);
+%     [tf,freq,time] = timefreq(ca_demean{1},fs_ca,'ffttaper','none','winsize',win,'ntimesout',len_ca/win*2,'padratio',256,'freqs',[0,10]);
     time = time / 1000;
    
     imagesc(time,freq,abs(tf));
@@ -273,9 +242,9 @@ for ir = 1:length(scans)
 ca_pp_all{ir} = mean(ca_pp_ave{ir}(:,2:end),2); % ave of 1~5Hz
 end
 
-% filter of 0~10Hz separately 
+% filter of 0~5Hz separately 
 for ir = 1:length(scans)
-    for i = 1:5% 0~10 Hz frequency bands
+    for i = 1:nfreq% 0~5 Hz frequency bands
         freq_band_tmp = [fliplr(ca_pp_ave{ir}(1:round(len_filt/4),i)); ca_pp_ave{ir}(:,i); ...
                 fliplr(ca_pp_ave{ir}(end-round(len_filt/4)+1:end,i))];% extend signal for filtering
             ca_pb_filt{ir}(:,i) = filtfilt(b1, a1, freq_band_tmp);
@@ -475,7 +444,7 @@ trails = [2,3,5,7,8,9,12,14,15,16,17,18,23,24,25,26,27,30,31];
 for is = 1:nslice
       h=figure;
     for ir = 1:length(scans)
-% for ir = trails;
+% for ir = 1;
 
 %     for ir = trails
         test_fmri(ir,is,:) = downsample(fmri_filt{ir}{is},1/TR);
@@ -526,16 +495,17 @@ end
 for i = 1:5
   h = figure;
     for ir = 1:length(scans)
-% for ir = 5
+% for ir = 1
         
-        fmri_dw{ir} = downsample(fmri_filt{ir}{1},1/TR);
-        [coff(ir,:,i),lag_3] = xcorr(zscore(ca_pb_filt_new{ir}(:,i)),zscore(squeeze(fmri_dw{ir})),10,'coeff');
+        fmri_dw{ir} = downsample(fmri_filt{ir}{3},1/TR);
+% fmri_dw{ir} = fmri_filt{ir}{3};
+        [coff(ir,:,i),lag_3] = xcorr(zscore(ca_pb_filt_new{ir}(:,i)),zscore(squeeze(fmri_dw{ir})),30,'coeff');
         h1 = plot(lag_3,coff(ir,:,i),'Color','k');
 %         h1 = plot(lag_3,coff(ir,:,i));
         hold on;
-        xlim([-10,10]);
+        xlim([-30,30]);
         [pks_pp_new(ir,i,:),locs_pp_new(ir,i,:)] = max(coff(ir,:,i));
-        locs_pp_new(ir,i,:) = (locs_pp_new(ir,i,:)-11);
+        locs_pp_new(ir,i,:) = (locs_pp_new(ir,i,:)-31);
         if locs_pp_new(ir,i,:)<0 || locs_pp_new(ir,i,:)==0 
             clr = 'r';
         else
