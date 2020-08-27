@@ -5,14 +5,17 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % fmri_path = 'D:\05232019\05232019_fmri_analyzed';
 % fmri_path = 'D:\05302019_Hang\05302019_analyzed';
-fmri_path = 'D:\09122019\fmri_analyzed09122019';
+% fmri_path = 'D:\09122019\fmri_analyzed09122019';
+% fmri_path = '/big_data/qi/10092018/10092018fmri/10092018';
+fmri_path = '/big_data/qi/05232019/05232019_analyzed';
 % fmri_path = 'D:\10062018_evoke\1006fmri\10062018';
 % fmri_path = 'D:\03242019\fmri_analyzed03242019';
 % fmri_path='D:\HANG\10062018rsesting-state\fmri_data';
 % fmri_path = 'D:\10092018\fmri_analyzed10092018';% 10092018
 % ca_path = 'D:\05232019\05232019_ca';
 % ca_path = 'D:\05302019_Hang\05302019_ca';
-ca_path = 'D:\09122019\09122019_ca';
+% ca_path = 'D:\09122019\09122019_ca';
+ca_path = '/big_data/qi/05232019/05232019_ca';
 % ca_path = 'D:\10062018_evoke\ca_1006\0_Task_related';
 % ca_path = 'D:\03242019\Calcium_data03242019';
 % ca_path = 'D:\HANG\10062018rsesting-state\calcium_data';
@@ -32,7 +35,7 @@ bsl_fmri = 2;%sec
 % scans = [36,51,55,57,59,61,63,65,69,71];%10062018
 % scans = [16 17 20 23 25 27 29 31 33 35 36 ];%05302019tk_P
 % scans = [13,15,17,19,21,23,25,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,62,64,66,68,70,72,74,76,78];%09122019_RS
-scans = [12,14,16,18,20,22,24,27,29,31,33,35,37,39,41,43,45,47,49,51,53,55,57,59,61,63,65,67,69,71,73,75,77,79];%09122019_TK
+% scans = [12,14,16,18,20,22,24,27,29,31,33,35,37,39,41,43,45,47,49,51,53,55,57,59,61,63,65,67,69,71,73,75,77,79];%09122019_TK
 % scans = 12;
 % scans = [39 41 43 45 47 49 51 53 55 57 59 61 63 65 67 69 71 73 75 77 79 81];%05302019tk_N
 % scans = [16 17 20 23 25 27 29 31 33 35 36 39 41 43 45 47 49 51 53 55 57 59 61 63 65 67 69 71 73 75 77 79 81];%05302019tk
@@ -52,7 +55,7 @@ voxel_idx = [1,1,1,2,2,2,2,2,2,2,2,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5
 
 % load calium
 for ir = 1:length(scans)
-    data_ca_orig = load([ca_path,'\scan_',num2str(scans(ir)),'.mat']);
+    data_ca_orig = load([ca_path,'\scan_',num2str(scans(ir)),'_TK.mat']);
     [data_match,fmri_dummy,beg,fin] = match_acq_fmri(data_ca_orig,fmri_dummy,TR,prestim);
     ca_match{ir} = -(data_match.channels{chan_ca}.data)';
 %     baseline_ca{ir} = mean(-data_ca_orig.channels{7}.data(:,1:prestim*fs_ca),2); 
@@ -168,10 +171,14 @@ len_ca = length(ca_demean{ir});
 
 for ir = 1:length(scans)
     for c = 1:4
-        [tf1(:,:,c),freq1,time1(:,c)] = timefreq(ca_demean{1}((len_ca/4)*(c-1)+1:c*(len_ca/4),:),fs_ca,'wletmethod','dftfilt3','winsize',win,'ntimesout',6400/4,'padratio',256,'freqs',[0,10]);
+        [tf1(:,:,c),freq1,time1(:,c)] = timefreq(ca_demean{ir}((len_ca/4)*(c-1)+1:c*(len_ca/4),:),fs_ca,'wletmethod','dftfilt3','winsize',win,'ntimesout',6400/4,'padratio',256,'freqs',[0,10]);
     end
     save(['tf',num2str(ir),'.mat'], 'tf1');
     clear tf1
+end
+
+for ir = 1:length(scans)
+    tf1{ir} = laod(['tf',num2str(ir),'.mat']);
 end
 
 for ir = 1:length(scans)
@@ -188,11 +195,12 @@ ylabel('Frequency(Hz)');
 ylim([freq2(1),freq2(end)]);
 set(gcf,'Position',[500 500 980 300 ]);
 saveas(h,['ca 0.01-10Hz PSD trail ',num2str(scans(ir)),'.jpg']);
-
-ca_pp_bsl{ir} = abs(tf2(freq2<0.05,:));% baseline assignment(<0.05Hz)
+end
+for ir = 1:length(scans)
+ca_pp_bsl{ir} = abs(tf2{ir}(freq2<0.05,:));% baseline assignment(<0.05Hz)
     ca_pp_bls_ave{ir} = mean(ca_pp_bsl{ir},1); % time series of pp(<0.05Hz)
     for i = 1:nfreq % frequency from 0~5Hz
-        ca_pp{ir}(:,:,i) = abs(tf2(i-1<freq2&freq2<i,:)); 
+        ca_pp{ir}(:,:,i) = abs(tf2{ir}(i-1<freq2&freq2<i,:)); 
         ca_pp_ave{ir}(:,i) = squeeze(mean(ca_pp{ir}(:,:,i),1)); % timecourse pp(1~5Hz) individually
     end
 end
