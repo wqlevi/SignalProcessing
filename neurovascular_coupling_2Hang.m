@@ -20,9 +20,9 @@ ca_path = '/big_data/qi/05232019/05232019_ca';
 % ca_path = 'D:\03242019\Calcium_data03242019';
 % ca_path = 'D:\HANG\10062018rsesting-state\calcium_data';
 % ca_path = 'D:\10092018\ca_10092018';% 10092018
-mkdir('C:\Users\wangqi\Desktop\Neurovascular coupling\0912\figs');
-savepath = 'C:\Users\wangqi\Desktop\Neurovascular coupling\0912\figs';
-addpath('C:\Users\wangqi\Documents\Lab\Demo\Calcium');
+mkdir('/home/qiwang2/Documents/Cache_matlab/0523tk/figs');
+savepath = '/home/qiwang2/Documents/Cache_matlab/0523tk/figs';
+addpath('/home/qiwang2/utilities');
 
 TR = 0.1;% 0.1s
 Spatial_res = 0.05; %0.05 per pixel/voxel
@@ -31,7 +31,8 @@ fmri_duration = 640;
 bsl_fmri = 2;%sec
 % scans = [35 37 39 44 49 51 57 59 64 66 69];%03242019
 % scans = [22,26];
-% scans = [15 18 20 23 25 28 31 34 35 37 39 41 43 45 48 49 52 54 56 58 59];%05232019TK
+scans = [15 18 20 23 25 28 31 34 35 37 39 41 43 45 47 49 52 54 56 58 59];%05232019TK
+% scans = 47;
 % scans = [36,51,55,57,59,61,63,65,69,71];%10062018
 % scans = [16 17 20 23 25 27 29 31 33 35 36 ];%05302019tk_P
 % scans = [13,15,17,19,21,23,25,26,28,30,32,34,36,38,40,42,44,46,48,50,52,54,56,58,60,62,64,66,68,70,72,74,76,78];%09122019_RS
@@ -55,7 +56,7 @@ voxel_idx = [1,1,1,2,2,2,2,2,2,2,2,3,3,3,3,3,4,4,4,4,4,4,4,4,4,4,4,5,5,5,5,5,5,5
 
 % load calium
 for ir = 1:length(scans)
-    data_ca_orig = load([ca_path,'\scan_',num2str(scans(ir)),'_TK.mat']);
+    data_ca_orig = load([ca_path,'/scan_',num2str(scans(ir)),'_TK.mat']);
     [data_match,fmri_dummy,beg,fin] = match_acq_fmri(data_ca_orig,fmri_dummy,TR,prestim);
     ca_match{ir} = -(data_match.channels{chan_ca}.data)';
 %     baseline_ca{ir} = mean(-data_ca_orig.channels{7}.data(:,1:prestim*fs_ca),2); 
@@ -67,8 +68,8 @@ t_fmri = [0:TR:(length(fmri_dummy)-1)*TR];ls
 % load fmri
 for ir = 1:length(scans)
     for is = 1:nslice
-        tmp = load([fmri_path, '\', num2str(scans(ir)), '\Results_Slice', num2str(is), ...
-                '\line_scanning_data_s', num2str(is), '.mat']);
+        tmp = load([fmri_path, '/', num2str(scans(ir)), '/Results_Slice', num2str(is), ...
+                '/line_scanning_data_s', num2str(is), '.mat']);
          fmri{ir}{is} = abs(tmp.total_cortical_depth_map);   
     end
 end
@@ -90,7 +91,12 @@ end
 % trim 2mm of cortex
 for ir = 1:length(scans)
     for is = 1:nslice
-        fmri_trim{ir}{is} = fmri{ir}{is}(i_half(is,ir)+1:i_half(is,ir)+cortical_depth,:);
+        if is == 1
+            offset = 2;
+        else 
+            offset = 0;
+        end
+        fmri_trim{ir}{is} = fmri{ir}{is}(i_half(is,ir)+1+offset:i_half(is,ir)+cortical_depth+offset,:);
     end
 end
 
@@ -126,7 +132,7 @@ for ir = 1:length(scans)
     end
     ca_match{ir} = detrend(ca_match{ir});
 end
-
+close all
 %% Raw signals 1-D plot
 % fmri time course each slice
 for ir = 1:length(scans)
@@ -169,30 +175,30 @@ NFFT = 2^18;
 overlap = 0;
 len_ca = length(ca_demean{ir});
 
-for ir = 1:length(scans)
-    for c = 1:4
-        [tf1(:,:,c),freq1,time1(:,c)] = timefreq(ca_demean{ir}((len_ca/4)*(c-1)+1:c*(len_ca/4),:),fs_ca,'wletmethod','dftfilt3','winsize',win,'ntimesout',6400/4,'padratio',256,'freqs',[0,10]);
-    end
-    save(['tf',num2str(ir),'.mat'], 'tf1');
-    clear tf1
-end
+% for ir = 1:length(scans)
+%     for c = 1:4
+%         [tf1(:,:,c),freq1,time1(:,c)] = timefreq(ca_demean{ir}((len_ca/4)*(c-1)+1:c*(len_ca/4),:),fs_ca,'wletmethod','dftfilt3','winsize',win,'ntimesout',6400/4,'padratio',256,'freqs',[0,10]);
+%     end
+%     save(['tf',num2str(ir),'.mat'], 'tf1');
+%     clear tf1
+% end
 
 for ir = 1:length(scans)
-    tf1{ir} = laod(['tf',num2str(ir),'.mat']);
+    tf1{ir} = load(['tf',num2str(ir),'.mat']);
 end
 
 for ir = 1:length(scans)
     h = figure;
-tf2{ir} = reshape(tf1{ir},size(freq1,2),6400);
-freq2 = reshape(freq1,[],1);
-time2 = reshape(time1,[],1)/1000;
+tf2{ir} = reshape(tf1{ir}.tf1,size(tf1{ir}.tf1,1),6400);
+freq2 = 0:10/(size(tf1{ir}.tf1,1)-1):(size(tf1{ir}.tf1,1)-1)*10/(size(tf1{ir}.tf1,1)-1); % set freq ticks array 
+time2 = 0:.1:(6400-1)*.1;% set time ticks array
 imagesc(time2,freq2,abs(tf2{ir}));
 colormap jet;
 caxis([0,6]);
 set(gca,'YDir','normal');
 xlabel('time(s)');
 ylabel('Frequency(Hz)');
-ylim([freq2(1),freq2(end)]);
+ylim([0,freq2(end)]);
 set(gcf,'Position',[500 500 980 300 ]);
 saveas(h,['ca 0.01-10Hz PSD trail ',num2str(scans(ir)),'.jpg']);
 end
@@ -200,44 +206,14 @@ for ir = 1:length(scans)
 ca_pp_bsl{ir} = abs(tf2{ir}(freq2<0.05,:));% baseline assignment(<0.05Hz)
     ca_pp_bls_ave{ir} = mean(ca_pp_bsl{ir},1); % time series of pp(<0.05Hz)
     for i = 1:nfreq % frequency from 0~5Hz
-        ca_pp{ir}(:,:,i) = abs(tf2{ir}(i-1<freq2&freq2<i,:)); 
+        ca_pp{ir}(:,:,i) = abs(tf2{ir}(freq2==i-1|i-1<freq2&freq2<i,:)); 
         ca_pp_ave{ir}(:,i) = squeeze(mean(ca_pp{ir}(:,:,i),1)); % timecourse pp(1~5Hz) individually
     end
 end
 
 
 
-% for ir = 1:length(scans)
-%     h = figure;
-%     % Q1: should 'ntimesout' be chosen to same samples as fmri?
-%     % Q2: How does 'winsize' influence frequency resolution, indenpendent of NFFTs? 
-%     [tf,freq,time] = timefreq(ca_demean{ir},fs_ca,'wletmethod','dftfilt3','winsize',win,'ntimesout',(len_ca/win*2),'padratio',256,'freqs',[0,10]);
-%     time = time / 1000;
-%    
-%     imagesc(time,freq,abs(tf));
-%     colormap jet;
-%     set(gca,'YDir','normal');
-%     xlabel('time(s)');
-%     ylabel('Frequency(Hz)');
-%     ylim([freq(1),freq(end)]);
-%     set(gcf,'Position',[500 500 980 300 ]);
-%     title(['ca 0.01-10Hz PSD trail ',num2str(scans(ir))]);
-%     hcb = colorbar;
-% 
-%     caxis([0,6]);
-%     ylabel(hcb,'Power(dB)');
-% 
-%     saveas(h,['ca 0.01-10Hz PSD trail ',num2str(scans(ir)),'.jpg']);
-% %   
-%     ca_pp_bsl{ir} = abs(tf(freq<0.05,:));% baseline assignment(<0.05Hz)
-%     ca_pp_bls_ave{ir} = mean(ca_pp_bsl{ir},1); % time series of pp(<0.05Hz)
-%     for i = 1:nfreq % frequency from 0~5Hz
-%         ca_pp{ir}(:,:,i) = abs(tf(i-1<freq&freq<i,:)); 
-%         ca_pp_ave{ir}(:,i) = squeeze(mean(ca_pp{ir}(:,:,i),1)); % timecourse pp(1~5Hz) individually
-%     end
-% 
-% end
-% Pwelch 
+ 
 
 for ir = 1:length(scans)
 % for ir = trails
@@ -440,7 +416,7 @@ for is = 1:nslice
         ylabel('Ca^2^+ time','fontweight','bold');
         xlim([0,640]);
         box off;
-        saveas(h,['fmri_ca(1~5Hz) trail',num2str(ir),'slice',num2str(is),'.jpg']);
+        saveas(h,['fmri_ca(1~5Hz) trail',num2str(scans(ir)),'slice',num2str(is),'.jpg']);
     end
     
 end
@@ -458,8 +434,8 @@ xcor_fmri(:,:,2) = fmri_corr13;
 xcor_fmri(:,:,3) = fmri_corr23;
 % XCORR between 3 slices
 for i = 1:3
-err_min = min(xcor_fmri(:,:,i),2);
-err_max = max(xcor_fmri(:,:,i),2);
+err_min = min(xcor_fmri(:,:,i),[],1);
+err_max = max(xcor_fmri(:,:,i),[],1);
 h = figure;
 fill([lag_0'*TR;flipud(lag_0'*TR)],[err_min';flipud(err_max')],[.9,.9,.9],'LineStyle','none');
 line(lag_0*TR,mean(xcor_fmri(:,:,i),1),'Color','black','LineWidth',2);
@@ -612,25 +588,56 @@ for is = 1:nslice
 end
 for is = 1:nslice
     for i = 1:5
-        lg_ave(is,:,i) = mean(lag_max_tmp(:,is,i),1);
-        lg_std(is,:,i) = std(lag_max_tmp(:,is,i),1);
+        lg_ave(is,i) = mean(lag_max_tmp(:,is,i),1);
+        lg_std(is,i) = std(lag_max_tmp(:,is,i),1);
     end
 end
+lg_ave = squeeze(lg_ave)';
+lg_std = squeeze(lg_std)';
 close all
 %% error bar plot
-h = figure;
-barwitherr(squeeze(lg_std)',[1:5],squeeze(lg_ave)','LineWidth',2,'BarWidth',0.5);
-legend({'Slice#1','Slice#2','Slice#3'});
-set(gca,'XTickLabel',{'L1','L2/3','L4','L5','L6'});
-% set(gca,'YDir','reverse');
-colormap summer;
-title('Maximum lag time (Ca&BOLD) in each layers');
-box off;
-grid on;
-set(gca,'YLim',([-lg,lg]));
-ylabel('Lag time(s)');
-saveas(h,'Error bar.jpg');
+% h = figure;
+% barwitherr(squeeze(lg_std)',[1:5],squeeze(lg_ave)','LineWidth',2,'BarWidth',0.5);
+% legend({'Slice#1','Slice#2','Slice#3'});
+% set(gca,'XTickLabel',{'L1','L2/3','L4','L5','L6'});
+% % set(gca,'YDir','reverse');
+% colormap summer;
+% title('Maximum lag time (Ca&BOLD) in each layers');
+% box off;
+% grid on;
+% set(gca,'YLim',([-lg,lg]));
+% ylabel('Lag time(s)');
+% saveas(h,'Error bar.jpg');
 
+%ALTERNATES
+h = figure;
+% x_group = [1:1:5];
+% x_group = categorical({'L1','L2/3','L4','L5','L6'});
+b = bar(lg_ave,.8,'FaceColor','flat','EdgeColor','flat');
+hold on;
+
+% Note: 'XOffset' was not documented
+xCnt = (get(b(1),'XData') + cell2mat(get(b,'XOffset'))).';
+er = errorbar(xCnt, lg_ave, lg_std/length(scans), 'k', 'LineStyle','none','LineWidth',3);
+
+Fclr = [51, 153, 255;255, 51, 51;255, 153, 51]/255;
+for ir = 1:length(scans)
+    for k = 1:3
+        p(k) = plot(xCnt(:,k),squeeze(lag_max_tmp(ir,k,:)),'.','MarkerFaceColor',Fclr(k,:),'MarkerEdgeColor',Fclr(k,:));
+        p(k).MarkerSize = 8;
+%         p(k).MarkerFaceColor = Fclr(k,:);
+        hold on;
+    end
+end
+ylim([-6,6]);
+legend({'Slice#1','Slice#2','Slice#3'});
+legend('boxoff');
+box off;
+ax = gca;
+ax.XTickLabel = {'L1','L2/3','L4','L5','L6'};
+ax.YLabel.String = 'Lag time';
+title('SEM bar of animal');
+saveas(h,'SEM bar of animal.jpg');
 %% 2D xcorr
 for ir = 1:length(scans)
     h = figure;
@@ -697,7 +704,8 @@ for i = 1:5
         ylim([-1,1]);
         box off;
         set(get(get(h1,'Annotation'),'LegendInformation'),'IconDisplayStyle','off');
-        legend('Positive lag','Negative lag(Ca leading)');
+        legend('Maximum lag');
+        legend('boxoff');
 %         legend;
     end
     text(0.8,9,'slice 1');
