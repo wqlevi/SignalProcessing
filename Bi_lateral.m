@@ -1,6 +1,11 @@
 %% Initializing parameters
 addpath('C:\Users\wangqi\Documents\Lab\Demo\Fid2plot') % the path where Brucker functions were stored
-path = 'D:\27072020_yi\'; % targeted path of data 
+path = 'D:\28092020_yi\'; % targeted path of data 
+% path = 'D:\Hang_bilateral\3\'
+% path = 'D:\09102020_yi\';
+% path = 'D:\BIL_CA\';
+% path = 'D:\BIL_RS\';
+% path = ['D:\14072020_yi\';'D:\03102020_yi\';'D:\09102020_yi\'];
 addpath('C:\Users\wangqi\Documents\Lab\Demo\Calcium');% some functions imported
 % path = 'D:\05232019\05232019_fmri_analyzed\20\fid';
 
@@ -11,45 +16,63 @@ params.zf = [0,0,0,0];
 params.ft = [1,1,0,0];
 
 cortex_depth = 2;% 2mm
-spatial_res = 0.1; % see `method` 'Spatial_resolution'
+spatial_res = 0.1; % 0.1 | 0.05 | 0.025 see `method` 'Spatial_resolution'
 len_cortex = cortex_depth/spatial_res; % cortex depth in samples
 depth_cc = 5;% 0.5 mm of corpus callosum
 cc_on = 0;% 0,w/o cc | 1,w/ cc
 layer_idx = [1,2,2,2,2,3,3,4,4,4,4,4,4,5,5,5,5,5,5,5];
 layer_name = {'L1','L2/3','L4','L5','L6'};
-
+Font = 15;
 % sampling rates;
 TR = 0.1;
 Fs = 1/TR;
 nepoch = 32;
-nvoxels = 20;
-% scans = [44,46,50]; % 14072020
-scans = [34,35,36,38,39,40,41,42,43,44,45,46,47,48,49];%27072020
-% scans = [31,32,33,34,35];%09102020
-% scans = [40];
+nvoxels = len_cortex;
+% scans = [24,25,28,29,44,47];%Hang_RS_tSNR
+% scans = [30,35,41,45,59,61] ;%Hang_TK_tSNR
+
+% scans = [44,46,50,53,57]; % 14072020tk
+% scans = [31,32,33,34,35];%09102020tk
+% scans = [63,64,65,66,67,68,70];%0310tk
+
+
+% scans = [47,48,49];%1407RS
+% scans = [48,49,50,51,52,61,62,63];%3107RS
+% scans = [56,57,58,59];%0310RS
+% scans = [20,28];%0910RS
+% scans = [34,35,36,38,39,40];%2707_comparison
+% scans = [34,35,36,38,39,40,41,42,43,44,45,46,47,48,49];%27072020
+% scans = [18,23,24,25,29,30,31,32,33,35,37,38,39,47,48,49,50,51];%0510
+% scans = [18,23,24,25,29,30];%0510_comp
 % scans = [48,49,56,57,58,59];
-% scans = [63,64,65,66,67,68];
-% scans = [32,34,35,36,37,38,39];
-% scans = [34,35,36,38,39,40,41,42,43,44,45,46,47,48,49];
-% scans = [61];
-% scans = [54,55,56,57,58,59,60]; 
+scans = [32,34,35,36,37,38];%2809_comp
+% scans = [32,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48];% 2809
+% scans = [54,55,56,57,58,59,60]; %3107
 % scans = [35,40,81];% 16072020
-% scans = [68];
 % scans = [49,61,62,63]; %30072020_rs
 % scans = [54,55,56,57,58,59,60]; % 30072020
+
 
 
 prestim = 1/TR;
 
 % scans = [77,78,80,81,82,83,84,90,91];% 16072020
 
-ave = 1; % 1 | 0, 'ave' | 'rs'
+ave = 0; % 1 | 0, 'ave' | 'rs'
 rs = 0; % 1 | 0, 'rs' | 'evoked'
 % I/O path:
 
 mkdir([path,'\figs']);
 
 save_path=[path,'\figs'];
+%% All animal raw fid
+% 
+% for ir = 1:length(scans)
+% path_fmri = [path,num2str(scans(ir)),'\fid'];
+% [res, p, pathstr] = BrReadImage_AutoRun(path_fmri, params);
+% res = squeeze(res);
+% fmri(ir,:,:,:,:) = squeeze(res); % trials*128*32*nslice*200
+% end
 
 %% Read raw fid
 for ir = 1:length(scans)
@@ -63,8 +86,8 @@ if ave ==1
 fmri = squeeze(mean(fmri,1));
 disp(['Number of averaged trials: ',num2str(ir)])
 end
-
 %% Formating fid
+cd ([path,'figs'])
 if ave == 1
 [nX, nY, ndur] = size(squeeze(fmri(:,:,1,:)));   
 nslice = size(fmri,3);
@@ -78,7 +101,7 @@ end
 % nslice = size(fmri,3);% ave ,size(,3)
 for ir = 1:trials
     for is = 1:nslice
-        if ave==1
+        if ave==1   
         fmri_slice{ir}{is} = squeeze(fmri(:,:,is,:)); %128*32*200
         else  
         fmri_slice{ir}{is} = squeeze(fmri(ir,:,:,is,:));% ave
@@ -86,8 +109,8 @@ for ir = 1:trials
         slice_fftc{is} = fft2c(fmri_slice{ir}{is});
         slice_ifft{is} = ifft2c(slice_fftc{is});
         fmri_slice{ir}{is} = fftc(slice_ifft{is},2);
-       for k = 1:32
-        for j = 1:200
+       for k = 1:nY
+        for j = 1:ndur
             fmri_cm(:,k+32*(j-1)) = abs(fmri_slice{ir}{is}(:,k,j));
         end
        end
@@ -101,22 +124,25 @@ t_fmri = 0:TR:(nY*ndur-1)*TR; % t_fmri initialization
 for ir = 1:trials
     for is = 1:nslice
         h = figure; 
-        set(h, 'WindowStyle', 'docked', 'NumberTitle', 'off', 'Name', ['tSNR '])
-        plot(linspace(1,nX,nX),abs(mean(fmri_tc{ir}{is},2)));
+        set(h, 'WindowStyle', 'docked', 'NumberTitle', 'off', 'Name', ['Line profile '])
+        intensity(ir,is,:) = abs(mean(fmri_tc{ir}{is},2));
+        plot(linspace(1,nX,nX),squeeze(intensity(ir,is,:)));
         xlabel('cortical depth(mm)');
-        xlim([1,128]);
+        xlim([1,size(squeeze(fmri),1)]);
         ylabel('intensity');
         title(['Cortical surface trail#',num2str(scans(ir))]);
     end
 end
 for ir = 1:trials
     for is = 1:nslice
+        snr_tmp(ir,is,:) = tSNR(fmri_tc{ir}{is});
         h = figure;
-        plot(linspace(1,nX,nX),tSNR(abs(mean(fmri_tc{ir}{is},2))));
+        plot(linspace(1,nX,nX),squeeze(snr_tmp(ir,is,:)));
         ylabel('tSNR');
         xlabel('Cortical depth');
     end
 end
+
 %% Cutting off cortical depth
 cd(save_path)
 % CC border still untargeted
@@ -124,10 +150,28 @@ for ir = 1:trials
     for is = 1:nslice
         ave_tsnr(:,ir,is) = abs(mean(fmri_tc{ir}{is},2));
         ave_tsnr(:,ir,is) = ave_tsnr(:,ir,is) - min(ave_tsnr(:,ir,is));
-%         half_idx(:,ir,is) = find(ave_tsnr(:,ir,is)>(max(ave_tsnr(:,ir,is))/2),1);
-        half_idx(:,ir,is) = 39; % MANUALLY DEFINED CORTEX SURFACE
+        half_idx(:,ir,is) = find(ave_tsnr(:,ir,is)>(max(ave_tsnr(:,ir,is))/2),1)+1;
+%         half_idx(:,ir,is) = 40;%2809
+%         2sides TK Hang's
+%         half_idx(:,1,1) = 61;
+%         half_idx(:,1,2) = 55;
+%         half_idx(:,2,1) = 64;
+%         half_idx(:,2,2) = 53;
+%         half_idx(:,3,1) = 49;
+%         half_idx(:,3,2) = 47;
+%         half_idx(:,4,1) = 45;
+%         half_idx(:,4,2) = 45;
+%         half_idx(:,5,1) = 57;
+%         half_idx(:,5,2) = 52;
+%         half_idx(:,6,1) = 57;
+%         half_idx(:,6,2) = 52;
+%           
+        half_idx(:,ir,is) = 37;
+
+%         half_idx(:,ir,2) = half_idx(:,ir,1);
+%         half_idx(:,ir,is) = 38;
+%         half_idx(:,ir,is) = 39;% MANUALLY DEFINED CORTEX SURFACE
         half_idx_bot(:,ir,is) = half_idx(:,ir,is)+len_cortex; % bottom of cortex
-        
         cc_idx_bot(:,ir,is) = half_idx_bot(:,ir,is)+depth_cc; % bottom of corpus callosum
     end
 end
@@ -174,9 +218,16 @@ end
 
 
 %% tSNR
-
+for ir = 1:trials
 for is = 1:nslice
-    tsnr_temp(:,ir,is) = squeeze(mean(fmri_cm_cut{ir}{is},2) ./ std(fmri_cm_cut{ir}{is},0,2));% computation: mean/stdev
+    tsnr_temp1(:,ir,is) = squeeze(mean(fmri_cm_cut{ir}{is},2) ./ std(fmri_cm_cut{ir}{is},0,2));% computation: mean/stdev
+end
+end
+
+for ir = 1:trials
+for is = 1:nslice
+    tsnr_temp(:,ir,is) = squeeze(mean(fmri_tc{ir}{is},2) ./ std(fmri_tc{ir}{is},0,2));% computation: mean/stdev
+end
 end
 
 for ir = 1:trials
@@ -187,6 +238,24 @@ for ir = 1:trials
         title('tSNR of cortex');
     end
 end
+for ir = 1:trials
+    for is = 1:nslice
+        figure(),
+        plot(1:size(tsnr_temp1,1),squeeze(tsnr_temp1(:,ir,is)));
+        xlim([1,size(tsnr_temp1,1)]);
+        title('tSNR of cortex');
+    end
+end
+
+% save('int.mat','');
+if ave == 1
+save('snr.mat','tsnr_temp1');%Ave trials
+else 
+save('snr_sp.mat','tsnr_temp1');%separate trials
+end
+
+save('cort_idx.mat','half_idx');
+save('all_snr.mat','tsnr_temp');
 %% cut off [ABORTED]
 for ir = 1:trials
     for is = 1:nslice
@@ -216,10 +285,16 @@ t_epoch = [0:TR:(ndur-1)*TR];
 for ir = 1:trials
     for is = 1:nslice
         for i = 1:nepoch
+            if i == 2 && strcmp(path ,'D:\14072020_yi\') % skip cal. of the second epoch
+                for iv = 1:nvoxels
+                fmri_cm_temp(iv,:,i) = (fmri_cm_de{ir}{is}(iv,1+(i-1)*ndur:i*ndur)-prestim_ref{ir}{is}(iv,:,i-1))./prestim_ref{ir}{is}(iv,:,i-1);
+                end
+            else
             for iv  = 1:nvoxels
                 prestim_ref{ir}{is}(iv,:,i) = mean(fmri_cm_de{ir}{is}(iv,1+(i-1)*ndur:prestim+(i-1)*ndur),2);
-                fmri_cm_temp(iv,:,i) = (fmri_cm_de{ir}{is}(iv,1+(i-1)*200:i*200)-prestim_ref{ir}{is}(iv,:,i))./prestim_ref{ir}{is}(iv,:,i); % Epoch-wise: \Delta F/ F
+                fmri_cm_temp(iv,:,i) = (fmri_cm_de{ir}{is}(iv,1+(i-1)*ndur:i*ndur)-prestim_ref{ir}{is}(iv,:,i))./prestim_ref{ir}{is}(iv,:,i); % Epoch-wise: \Delta F/ F
 %                 disp(prestim_ref)
+            end
             end
         end
         fmri_time_temp{ir}{is} = reshape(fmri_cm_temp,nvoxels,ndur*nepoch);
@@ -235,7 +310,14 @@ for is = 1:nslice
     imagesc(t_epoch,[],fmri_cm_epoch{ir}{is});
     colormap jet;
     colorbar;
-    caxis([-(2e-3),8e-3]);
+    caxis([-(2e-3),4e-2]);
+% switch is
+%     case 1
+%          caxis([-(2e-3),12e-2]);
+%     case 2
+%          caxis([-(2e-3),8e-2]);
+% end
+   
     saveas(h,['Epoch BOLD map trial#',num2str(scans(ir)), 'slice#',num2str(is),'.jpg']);
 end
 end
@@ -268,7 +350,7 @@ win = kaiser(N+1, beta); %using kaiser window
 flag = 'scale';  % Sampling Flag
 
 % Calculate the coefficients using the FIR1 function.
-b  = fir1(N, [Fc1, Fc2]/(Fs/2), 'bandpass', win, flag);
+b  = fir1(N, [Fc1, Fc2]/(Fs/2), 'bandpass', win, flag); % causing dampened ampitude and phase shift!!
 
 fvtool(b,1,'Fs',Fs)
 Hd = dfilt.dffir(b);
@@ -284,6 +366,7 @@ switch cc_on
         save_name_2 = 'temperal-spatial fmri map(with CC.)';
         disp('filtering with Corpus callosum...')
 end 
+
 if ave == 1
     save_name_3 = ' ave';
 else 
@@ -365,6 +448,7 @@ for ir = 1:trials
         saveas(h,[save_name_2,save_name_3,'trail# ',num2str(scans(ir)),' slice# ',num2str(is),'.jpg']);
     end
 end
+save('clm.mat','norm_cortical_map')
 % clear SI_percentage Threshold_SI_MAP norm_cortical_map norm_cortical_map_temp
 %% Time course of ave fmri
 switch cc_on
@@ -427,29 +511,8 @@ for ir = 1:trials
         fmri_ave_f{ir}{is} = temp_filt1(:,len/4+1:end-len/4);
     end
 end
-% epoch-wise filtering
-len_ep = size(ep_norm1{ir}{is},2);
-for ir = 1:trials
-    for is = 1:nslice
-        for iv  = 1:nvoxels
-            fmri_ep_tmp{ir}{is}(iv,:) = fmri_time_temp{ir}{is}(iv,:);
-            temp = [fliplr(fmri_ep_tmp{ir}{is}(iv,1:len/4)),fmri_ep_tmp{ir}{is}(iv,:),fliplr(fmri_ep_tmp{ir}{is}(iv,end-len/4+1:end))];
-            temp_filt3 = filtfilt(b,a,temp);
-            fmri_ep{ir}{is}(iv,:) = temp_filt3(:,len/4+1:end-len/4);
-        end
-    end
-end
 
-for ir = 1:trials
-    for is = 1:nslice
-        h = figure;
-        for il = 1:5
-            subplot(3,2,il)
-            plot(t_epoch,100*mean(fmri_ep{ir}{is}(layer_idx == il,:),1));
-            ylabel({layer_name{il},'Percentage(%)'});
-        end
-    end
-end
+
 
 for ir = 1:trials
     for is = 1:nslice
@@ -479,7 +542,7 @@ for is = 1:nslice
     for ir = 1:trials
         test1(ir,is,:) = squeeze(mean_slice_1(ir,is,:));
         test1(ir,is,:) = test1(ir,is,:) - mean(test1(ir,is,:));
-        [pxx(ir,is,:),f] = pwelch(squeeze(test1(ir,is,:)),hamming(size(test1,3)),0,[],1/TR);
+        [pxx(ir,is,:),f] = pwelch(squeeze(test1(ir,is,:)),hamming(size(test1,3)/4),0,[],1/TR);
     end
 end
 bsl = (mean(pxx(ir,is,0.9<f<1)));
@@ -514,7 +577,7 @@ for ir = 1:trials
         plot(f(f<0.5),10*log10(squeeze(pxx_norm(:,is,f<0.5))),'Color',clr{is});
         ax = gca();
         ax.XScale = 'log';
-        xticks([0,0.01,0.02,0.05,0.1,0.16,0.2,0.3,0.4]);
+        xticks([0,0.01,0.02,0.05,0.1,0.2,0.3,0.4]);
         xlim([f(2),f(size(f(f<0.5),1))]);
         hold on;
 %         h.Position = [500 500 980 300 ];
@@ -536,6 +599,7 @@ for ir = 1:trials
         fmri_layer{ir}{is}(5,:) = mean(fmri_timecourse{ir}{is}(14:19,:),1);
     end
 end
+clr = colormap(hsv(5));
 for ir = 1:trials
     for is = 1:nslice
         h = figure;
@@ -551,7 +615,7 @@ for ir = 1:trials
 end
 
 
-clr = colormap(hsv(5));
+
 for is = 1:nslice
    h = figure;
 for ir = 1:trials
@@ -559,10 +623,10 @@ for ir = 1:trials
         subplot(2,3,i)
         test = fmri_layer{ir}{is}(i,:);
         test = test - mean(test);
-        [pxx,f] = pwelch(test,hamming(size(test,2)/4),0,[],1/TR);
-        plot(f(f>0&f<0.1),pxx(f>0&f<0.1,:),'Color',clr(i,:));
+        [pxx1,f1] = pwelch(test,hamming(size(test,2)/4),0,[],1/TR);
+        plot(f1(f1>0&f1<0.1),pxx1(f1>0&f1<0.1,:),'Color',clr(i,:));
         hold on;
-        xlim([f(2),0.12]);
+        xlim([f1(2),0.12]);
 %         ylim([0,10])
         text(0.08,4,['N = ',num2str(length(scans))]);
         xlabel('frequency(Hz)');
@@ -577,7 +641,7 @@ end
 for ir = 1:trials
     for is = 1:nslice
         for i = 1:nepoch
-            ep_temp1(:,:,i) = fmri_timecourse{ir}{is}(:,1+(i-1)*200:i*200);
+            ep_temp1(:,:,i) = fmri_timecourse{ir}{is}(:,1+(i-1)*ndur:i*ndur);
             for iv = 1:nvoxels
                 ep_temp1(iv,:,i) =( ep_temp1(iv,:,i) - mean(ep_temp1(iv,1:prestim,i),2))./mean(ep_temp1(iv,1:prestim,i),2);
             end
@@ -592,13 +656,57 @@ end
 %         plot(0:TR:(ndur-1)*TR,ep_norm1{ir}{is}(iv,:),'Color',COLOR(iv,:));
 %         xlabel('time(s)');
 %         ylabel('\Delta F/F');
+%         ylim([-.01,.02]);
 %         title(['raw epoch-wise dynamic trail#',num2str(scans(ir)),'slice#',num2str(is),'.jpg']);
 %         hold on;
 %         end
-% %         saveas(h,['raw epoch-wise dynamic trail#',num2str(scans(ir)),'slice#',num2str(is),'.jpg']);
+%         saveas(h,['raw epoch-wise dynamic trail#',num2str(scans(ir)),'slice#',num2str(is),'.jpg']);
 %     end
 % end
 
+% specific filtering for epoch wise BOLD[1D]
+% epoch-wise filtering
+[b_1,a_1] = butter(1,0.12,'low');
+len_ep = size(ep_norm1{ir}{is},2);
+for ir = 1:trials
+    for is = 1:nslice
+        for iv  = 1:nvoxels
+            fmri_ep_tmp{ir}{is}(iv,:) = ep_norm1{ir}{is}(iv,:);
+            temp = [fliplr(fmri_ep_tmp{ir}{is}(iv,1:len_ep/4)),fmri_ep_tmp{ir}{is}(iv,:),fliplr(fmri_ep_tmp{ir}{is}(iv,end-len_ep/4+1:end))];
+            temp_filt3 = filtfilt(b_1,a_1,temp);
+            fmri_ep{ir}{is}(iv,:) = temp_filt3(:,len_ep/4+1:end-len_ep/4);
+        end
+    end
+end
+
+for ir = 1:trials
+    for is = 1:nslice
+        h = figure;
+        for il = 1:5
+            subplot(3,2,il)
+            plot(t_epoch,100*mean(fmri_ep{ir}{is}(layer_idx == il,:),1),'r');
+            [~,pks] = find(mean(fmri_ep{ir}{is}(layer_idx == il,:),1)>0.5*max(mean(fmri_ep{ir}{is}(layer_idx == il,:),1)),1);
+            hold on;
+            plot(pks/10,100*mean(fmri_ep{ir}{is}(layer_idx == il,pks),1),'r*','MarkerSize',5);
+            plot(t_epoch,100*mean(ep_norm1{ir}{is}(layer_idx == il,:),1));
+            ylabel({layer_name{il},'Percentage(%)'});
+            % max & min output
+            max_ep(ir,is,il) = max(mean(fmri_ep{ir}{is}(layer_idx == il,:),1));
+            min_ep(ir,is,il) = min(mean(fmri_ep{ir}{is}(layer_idx == il,:),1));
+        end
+    end
+end
+for ir = 1:trials
+    for is = 1:nslice
+        h = figure;
+        bar([squeeze(100*max_ep(ir,is,:)),squeeze(100*min_ep(ir,is,:))]);
+        ylabel('Percentage(%)');
+        ylim([-2,2])
+        xticklabels({'L1','L2/3','L4','L5','L6'});
+        title(['Amplitude of Positive & Negative BOLD response slice#',num2str(is)]);
+        saveas(h,['Amplitude of Positive & Negative BOLD response slice#',num2str(is),'.jpg']);
+    end
+end
 
 for ir = 1:trials
    for is = 1:nslice
@@ -614,7 +722,7 @@ end
 for ir = 1:trials
     for is = 1:nslice
         for i = 1:nepoch
-            ep_temp(:,:,i) = norm_cortical_map(:,1+(i-1)*200:i*200,ir,is);
+            ep_temp(:,:,i) = norm_cortical_map(:,1+(i-1)*ndur:i*ndur,ir,is);
             for iv = 1:nvoxels
                 ep_temp(iv,:,i) = (ep_temp(iv,:,i) - mean(ep_temp(iv,1:prestim,i),2))./mean(ep_temp(iv,1:prestim,i),2);
             end
@@ -622,6 +730,7 @@ for ir = 1:trials
         ep_norm{ir}{is} = mean(ep_temp,3);
     end
 end
+
 for ir = 1:trials
     for is = 1:nslice
         h = figure;
@@ -657,7 +766,12 @@ for ir = 1:trials
     h = figure;
     imagesc(ep_norm{ir}{is});
     colormap(jet);
-    caxis([-.01,.05])
+%     switch is
+%         case 1
+%         caxis([0,2]);
+%         case 2
+%         caxis([0,1]);
+%     end
     xlabel('time(s)');
     ylabel('cortical depth(voxels)');
     colorbar;
@@ -673,9 +787,9 @@ end
 % roi(:,2) = [24.5,71.4];
 % roi(:,3) = [4.7,2.84];
 % 6 min scans
-roi(:,1) = [25.5,49.1,37.2]; % roi 2 in anatomic
-roi(:,2) = [175,165,111]; % roi 1 in anatomic
-roi(:,3) = [5.12,2.7,2.81]; % background signals(as reference) 
+roi(:,1) = [25.5,49.1,37.2,23,22.7]; % roi 2 in anatomic
+roi(:,2) = [175,165,111,161,181]; % roi 1 in anatomic
+roi(:,3) = [5.12,2.7,2.81,3.14,2.42]; % background signals(as reference) 
 % function handle of SNR
 snr = @(s,b) (s)/sqrt(b);
 
@@ -692,32 +806,50 @@ end
 
 
 % componds of plots
-h = figure;
 x_group = [1:1:2];% two groups with 1 interval
-b = bar(x_group,ave,.3,'FaceColor','flat','EdgeColor','flat');
-b.CData(1,:) = [0.8500 0.3250 0.0980];%clr bar#1
-b.CData(2,:) = [0 0.4470 0.7410];%clr bar#2
-
-hold on;
-er = errorbar(x_group,ave,snr_std);
+h = figure;
+er = errorbar(x_group,ave,snr_std,'CapSize',20);
 er.Color = [0,0,0];
 er.LineStyle = 'none';
 er.LineWidth = 2;
-for k = 1:3
+set(gca,'XTick',[1,2]);
+% set(gca,')
+xlim([0.3,2.7])
+hold on;
+
+b = bar(x_group,ave,.8,'FaceColor','flat','EdgeColor','flat');
+% b.CData(1,:) = [0.8500 0.3250 0.0980];%clr bar#1
+b.CData(1,:) = [189,189,189]/255;
+% b.CData(2,:) = [0 0.4470 0.7410];%clr bar#2
+b.CData(2,:) = [134,134,134]/255;
+
+
+bias = 0.1;
+for k = 1:size(roi,1)
 %     p = plot(1:2,snr_re(k,:),'*');
-    p = plot(1,snr_re(k,1),'.',2,snr_re(k,2),'.');
-    p(1).Color = [206,132,103]/255;
-    p(2).Color = [131,177,210]/255;
+    p = plot(1+bias,snr_re(k,1),'k.',2+bias,snr_re(k,2),'k.');
+%     p(1).Color = [206,132,103]/255;
+%     p(2).Color = [131,177,210]/255;
     p(1).MarkerSize = 25;
     p(2).MarkerSize = 25;
     hold on;
 end
 hold off;
 ax = gca;
-ax.XTickLabel = {'ROI 1','ROI 2'};
+ax.XTickLabel = {'ROI 2','ROI 1'};
 ax.YLabel.String = 'SNR';
+% ax.XAxis.FontSize = Font;
+ax.LineWidth = 1;
+ax.FontWeight = 'bold';
 box off;
 saveas(h,'snr plot.jpg');
 
 
 
+%% file I/O
+
+save( 'trial_ave.mat','fmri_time_temp');
+save('epoch_ave.mat','fmri_cm_epoch');
+save('pxx.mat','pxx');
+save('f.mat','f');
+save('norm_fmri.mat','norm_cm');
