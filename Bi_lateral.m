@@ -1,8 +1,8 @@
 %% Initializing parameters
 addpath('C:\Users\wangqi\Documents\Lab\Demo\Fid2plot') % the path where Brucker functions were stored
-path = 'D:\28092020_yi\'; % targeted path of data 
+% path = 'D:\03102020_yi\'; % targeted path of data 
 % path = 'D:\Hang_bilateral\3\'
-% path = 'D:\09102020_yi\';
+path = 'D:\28092020_yi\';
 % path = 'D:\BIL_CA\';
 % path = 'D:\BIL_RS\';
 % path = ['D:\14072020_yi\';'D:\03102020_yi\';'D:\09102020_yi\'];
@@ -29,29 +29,28 @@ Fs = 1/TR;
 nepoch = 32;
 nvoxels = len_cortex;
 % scans = [24,25,28,29,44,47];%Hang_RS_tSNR
-% scans = [30,35,41,45,59,61] ;%Hang_TK_tSNR
-
+% scans = [15,32,41,45,59,61];%Hang_TK_tSNR
 % scans = [44,46,50,53,57]; % 14072020tk
 % scans = [31,32,33,34,35];%09102020tk
 % scans = [63,64,65,66,67,68,70];%0310tk
 
 
-% scans = [47,48,49];%1407RS
-% scans = [48,49,50,51,52,61,62,63];%3107RS
-% scans = [56,57,58,59];%0310RS
+% scans = [47,48];%1407RS
+% scans = [56,57];%0310RS
 % scans = [20,28];%0910RS
 % scans = [34,35,36,38,39,40];%2707_comparison
-% scans = [34,35,36,38,39,40,41,42,43,44,45,46,47,48,49];%27072020
+% scans =
+% [34,35,36,38,39,40,41,42,43,44,45,46,47,48,49];%27072020_opto
 % scans = [18,23,24,25,29,30,31,32,33,35,37,38,39,47,48,49,50,51];%0510
-% scans = [18,23,24,25,29,30];%0510_comp
+% scans = [18,23,24,25,29,30];%0510_comp_opto
 % scans = [48,49,56,57,58,59];
-scans = [32,34,35,36,37,38];%2809_comp
+scans = [32,34,35,36,37,38];%2809_comp_opto
 % scans = [32,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48];% 2809
 % scans = [54,55,56,57,58,59,60]; %3107
 % scans = [35,40,81];% 16072020
 % scans = [49,61,62,63]; %30072020_rs
 % scans = [54,55,56,57,58,59,60]; % 30072020
-
+% scans = [48,49,50,51,52,61,62,63];%3107RS
 
 
 prestim = 1/TR;
@@ -150,27 +149,32 @@ for ir = 1:trials
     for is = 1:nslice
         ave_tsnr(:,ir,is) = abs(mean(fmri_tc{ir}{is},2));
         ave_tsnr(:,ir,is) = ave_tsnr(:,ir,is) - min(ave_tsnr(:,ir,is));
-        half_idx(:,ir,is) = find(ave_tsnr(:,ir,is)>(max(ave_tsnr(:,ir,is))/2),1)+1;
-%         half_idx(:,ir,is) = 40;%2809
+        half_idx(:,ir,is) = find(ave_tsnr(:,ir,is)>(max(ave_tsnr(:,ir,is))/2),1);
+        half_idx(:,ir,is) = 40;%2809
+%         half_idx(:,ir,1) = 47;
+%         half_idx(:,ir,2) = 43;
 %         2sides TK Hang's
-%         half_idx(:,1,1) = 61;
-%         half_idx(:,1,2) = 55;
-%         half_idx(:,2,1) = 64;
-%         half_idx(:,2,2) = 53;
-%         half_idx(:,3,1) = 49;
-%         half_idx(:,3,2) = 47;
-%         half_idx(:,4,1) = 45;
-%         half_idx(:,4,2) = 45;
-%         half_idx(:,5,1) = 57;
-%         half_idx(:,5,2) = 52;
-%         half_idx(:,6,1) = 57;
-%         half_idx(:,6,2) = 52;
+%         half_idx(:,1,1) = 59;
+%         half_idx(:,1,2) = 48;
+%         half_idx(:,2,1) = 60;
+%         half_idx(:,2,2) = 55;
+%         half_idx(:,3,1) = 48;
+%         half_idx(:,3,2) = 49;
+%         half_idx(:,4,1) = 46;
+%         half_idx(:,4,2) = 47;
+%         half_idx(:,5,1) = 59;
+%         half_idx(:,5,2) = 53;
+%         half_idx(:,6,1) = 59;
+%         half_idx(:,6,2) = 53;
 %           
-        half_idx(:,ir,is) = 37;
+% 1 side Hang's RS
+%         half_idx(:,1,:) = 61;
+%         half_idx(:,2,:) = 61;
+%         half_idx(:,3,:) = 58;
+%         half_idx(:,4,:) = 58;
+%         half_idx(:,5,:) = 41;
+%         half_idx(:,6,:) = 41;
 
-%         half_idx(:,ir,2) = half_idx(:,ir,1);
-%         half_idx(:,ir,is) = 38;
-%         half_idx(:,ir,is) = 39;% MANUALLY DEFINED CORTEX SURFACE
         half_idx_bot(:,ir,is) = half_idx(:,ir,is)+len_cortex; % bottom of cortex
         cc_idx_bot(:,ir,is) = half_idx_bot(:,ir,is)+depth_cc; % bottom of corpus callosum
     end
@@ -249,13 +253,13 @@ end
 
 % save('int.mat','');
 if ave == 1
-save('snr.mat','tsnr_temp1');%Ave trials
+save('snr.mat','tsnr_temp1');% Ave trials trimmed
 else 
-save('snr_sp.mat','tsnr_temp1');%separate trials
+save('snr_sp.mat','tsnr_temp1'); % separate trials trimmed
 end
 
 save('cort_idx.mat','half_idx');
-save('all_snr.mat','tsnr_temp');
+save('all_snr.mat','tsnr_temp'); % untrimmed cortex
 %% cut off [ABORTED]
 for ir = 1:trials
     for is = 1:nslice
@@ -525,10 +529,11 @@ for ir = 1:trials
         ylim([-4,4]);
         xlabel('time(s)');
         ylabel('fMRI a.u.');
-        grid on;
+ 
         box off;
         title([title_name_filted,title_name2,'trail#',num2str(scans(ir)),' slice#',num2str(is)]);
         set(gcf,'Position',[500 500 980 300 ]);
+        set(gca,'LineWidth',2);
         saveas(h,[title_name_filted,title_name2,'trail#',num2str(scans(ir)),' slice#',num2str(is),'.jpg']);
     end
 end
@@ -819,13 +824,15 @@ hold on;
 
 b = bar(x_group,ave,.8,'FaceColor','flat','EdgeColor','flat');
 % b.CData(1,:) = [0.8500 0.3250 0.0980];%clr bar#1
-b.CData(1,:) = [189,189,189]/255;
+b.CData(2,:) = [189,189,189]/255;
 % b.CData(2,:) = [0 0.4470 0.7410];%clr bar#2
-b.CData(2,:) = [134,134,134]/255;
+b.CData(1,:) = [134,134,134]/255;
 
-
+% p-value
+[hh,pp,ci,stat1] = ttest2(snr_re(:,1),snr_re(:,2));
 bias = 0.1;
-for k = 1:size(roi,1)
+y_bar = max(max(snr_re));
+for k = 1:size(roi,1) % num of animals
 %     p = plot(1:2,snr_re(k,:),'*');
     p = plot(1+bias,snr_re(k,1),'k.',2+bias,snr_re(k,2),'k.');
 %     p(1).Color = [206,132,103]/255;
@@ -834,12 +841,14 @@ for k = 1:size(roi,1)
     p(2).MarkerSize = 25;
     hold on;
 end
+plot(x_group,y_bar*ones(1,2),'k-','LineWidth',2);
+plot([mean(x_group)*0.92,mean(x_group),mean(x_group)*1.08],(1.02*y_bar)*ones(1,3),'k*','MarkerSize',8);
 hold off;
 ax = gca;
 ax.XTickLabel = {'ROI 2','ROI 1'};
 ax.YLabel.String = 'SNR';
 % ax.XAxis.FontSize = Font;
-ax.LineWidth = 1;
+ax.LineWidth = 2;
 ax.FontWeight = 'bold';
 box off;
 saveas(h,'snr plot.jpg');
