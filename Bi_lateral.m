@@ -1,13 +1,13 @@
 %% Initializing parameters
 addpath('C:\Users\wangqi\Documents\Lab\Demo\Fid2plot') % the path where Brucker functions were stored
-% path = 'D:\03102020_yi\'; % targeted path of data 
+% path = 'D:\03102020_yi\'; % rs Fig.2g
 % path = 'D:\Hang_bilateral\3\'
-path = 'D:\28092020_yi\';
+path = 'D:\27072020_yi\';
 % path = 'D:\BIL_CA\';
 % path = 'D:\BIL_RS\';
 % path = ['D:\14072020_yi\';'D:\03102020_yi\';'D:\09102020_yi\'];
 addpath('C:\Users\wangqi\Documents\Lab\Demo\Calcium');% some functions imported
-% path = 'D:\05232019\05232019_fmri_analyzed\20\fid';
+
 
 params.complex = 1;
 params.filter=[0,0,0,0];
@@ -18,7 +18,7 @@ params.ft = [1,1,0,0];
 cortex_depth = 2;% 2mm
 spatial_res = 0.1; % 0.1 | 0.05 | 0.025 see `method` 'Spatial_resolution'
 len_cortex = cortex_depth/spatial_res; % cortex depth in samples
-depth_cc = 5;% 0.5 mm of corpus callosum
+depth_cc = 3;% 0.5 mm of corpus callosum
 cc_on = 0;% 0,w/o cc | 1,w/ cc
 layer_idx = [1,2,2,2,2,3,3,4,4,4,4,4,4,5,5,5,5,5,5,5];
 layer_name = {'L1','L2/3','L4','L5','L6'};
@@ -30,22 +30,24 @@ nepoch = 32;
 nvoxels = len_cortex;
 % scans = [24,25,28,29,44,47];%Hang_RS_tSNR
 % scans = [15,32,41,45,59,61];%Hang_TK_tSNR
+
 % scans = [44,46,50,53,57]; % 14072020tk
 % scans = [31,32,33,34,35];%09102020tk
 % scans = [63,64,65,66,67,68,70];%0310tk
 
-
+% scans = 57; %0310RS
 % scans = [47,48];%1407RS
 % scans = [56,57];%0310RS
 % scans = [20,28];%0910RS
 % scans = [34,35,36,38,39,40];%2707_comparison
-% scans =
-% [34,35,36,38,39,40,41,42,43,44,45,46,47,48,49];%27072020_opto
-% scans = [18,23,24,25,29,30,31,32,33,35,37,38,39,47,48,49,50,51];%0510
+% scans = [32,34,35,36,37,38];%2809_comp_opto
 % scans = [18,23,24,25,29,30];%0510_comp_opto
+
+scans = [34,35,36,38,39,40,41,42,43,44,45,46,47,48,49];%27072020_opto
+% scans = [18,23,24,25,29,30,31,32,33,35,37,38,39,47,48,49,50,51];%0510_opt
+% scans = [32,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48];% 2809_opto
+
 % scans = [48,49,56,57,58,59];
-scans = [32,34,35,36,37,38];%2809_comp_opto
-% scans = [32,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48];% 2809
 % scans = [54,55,56,57,58,59,60]; %3107
 % scans = [35,40,81];% 16072020
 % scans = [49,61,62,63]; %30072020_rs
@@ -57,7 +59,7 @@ prestim = 1/TR;
 
 % scans = [77,78,80,81,82,83,84,90,91];% 16072020
 
-ave = 0; % 1 | 0, 'ave' | 'rs'
+ave = 1; % 1 | 0, 'ave' | 'rs'
 rs = 0; % 1 | 0, 'rs' | 'evoked'
 % I/O path:
 
@@ -149,23 +151,30 @@ for ir = 1:trials
     for is = 1:nslice
         ave_tsnr(:,ir,is) = abs(mean(fmri_tc{ir}{is},2));
         ave_tsnr(:,ir,is) = ave_tsnr(:,ir,is) - min(ave_tsnr(:,ir,is));
-        half_idx(:,ir,is) = find(ave_tsnr(:,ir,is)>(max(ave_tsnr(:,ir,is))/2),1);
-        half_idx(:,ir,is) = 40;%2809
-%         half_idx(:,ir,1) = 47;
-%         half_idx(:,ir,2) = 43;
+%         half_idx(:,ir,is) = find(ave_tsnr(:,ir,is)>(max(ave_tsnr(:,ir,is))/2),1); % +1 for 09102020/03102020/ 14072020
+        half_idx(:,ir,is) = 41;%2707f3a  
+%         half_idx(:,ir,is) = 39; %2707idx
+
+%         half_idx(:,ir,is) = 40;%2809idx
+
+%         half_idx(:,ir,1) = 42;%0510idx
+%         half_idx(:,ir,2) = 37;%0510idx
+          
+        % half_idx(:,ir,1) = 55; %1407
+
 %         2sides TK Hang's
-%         half_idx(:,1,1) = 59;
-%         half_idx(:,1,2) = 48;
-%         half_idx(:,2,1) = 60;
-%         half_idx(:,2,2) = 55;
-%         half_idx(:,3,1) = 48;
-%         half_idx(:,3,2) = 49;
-%         half_idx(:,4,1) = 46;
-%         half_idx(:,4,2) = 47;
-%         half_idx(:,5,1) = 59;
-%         half_idx(:,5,2) = 53;
-%         half_idx(:,6,1) = 59;
-%         half_idx(:,6,2) = 53;
+%         half_idx(:,1,1) = 57;
+%         half_idx(:,1,2) = 46;
+%         half_idx(:,2,1) = 58;
+%         half_idx(:,2,2) = 53;
+%         half_idx(:,3,1) = 46;
+%         half_idx(:,3,2) = 47;
+%         half_idx(:,4,1) = 44;
+%         half_idx(:,4,2) = 45;
+%         half_idx(:,5,1) = 57;
+%         half_idx(:,5,2) = 51;
+%         half_idx(:,6,1) = 57;
+%         half_idx(:,6,2) = 51;
 %           
 % 1 side Hang's RS
 %         half_idx(:,1,:) = 61;
@@ -221,7 +230,7 @@ for ir = 1:trials
 end
 
 
-%% tSNR
+% %% tSNR
 for ir = 1:trials
 for is = 1:nslice
     tsnr_temp1(:,ir,is) = squeeze(mean(fmri_cm_cut{ir}{is},2) ./ std(fmri_cm_cut{ir}{is},0,2));% computation: mean/stdev
@@ -260,7 +269,7 @@ end
 
 save('cort_idx.mat','half_idx');
 save('all_snr.mat','tsnr_temp'); % untrimmed cortex
-%% cut off [ABORTED]
+% cut off [ABORTED]
 for ir = 1:trials
     for is = 1:nslice
         norm_cm{ir}{is} = fmri_cm_cut{ir}{is} ./ max(max(fmri_cm_cut{ir}{is}));
@@ -307,14 +316,14 @@ for ir = 1:trials
 end
 
 % plot the cortical epoch response
-% 2D
+% % % 2D
 for ir = 1:trials
 for is = 1:nslice
     h = figure;
     imagesc(t_epoch,[],fmri_cm_epoch{ir}{is});
     colormap jet;
     colorbar;
-    caxis([-(2e-3),4e-2]);
+    caxis([-(2e-3),3.5e-2]);
 % switch is
 %     case 1
 %          caxis([-(2e-3),12e-2]);
@@ -356,7 +365,7 @@ flag = 'scale';  % Sampling Flag
 % Calculate the coefficients using the FIR1 function.
 b  = fir1(N, [Fc1, Fc2]/(Fs/2), 'bandpass', win, flag); % causing dampened ampitude and phase shift!!
 
-fvtool(b,1,'Fs',Fs)
+% fvtool(b,1,'Fs',Fs)
 Hd = dfilt.dffir(b);
 
 % apply filters
@@ -416,7 +425,6 @@ pre_stim = 10;
 for ir = 1:trials
     for is = 1:nslice
         for nRepeat = 1 : nY %32
-
             SI_base_mean = mean(abs(cortical_depth_map(:,1+ndur*(nRepeat-1):pre_stim+ndur*(nRepeat-1),ir,is)),2); % 1s off
             SI_i = abs(cortical_depth_map(:,1+ndur*(nRepeat-1):ndur*(nRepeat),ir,is));% single epoch(1/32) response colormap
             for t = 1 : size(SI_i,2)
@@ -424,9 +432,7 @@ for ir = 1:trials
             end
             Threshold_SI_MAP(:,1+ndur*(nRepeat-1):ndur*(nRepeat)) = SI_percentage;
         end
-
         norm_cortical_map(:,:,ir,is) = abs(Threshold_SI_MAP(:,:))./max(max(abs(Threshold_SI_MAP(:,:))));
-
         norm_cortical_map_temp(:,:,ir,is) = abs(cortical_depth_map(:,:,ir,is))./max(max(abs(cortical_depth_map(:,:,ir,is))));
         Threshold_SI_MAP = abs(cortical_depth_map(:,:,ir,is))./mean(norm_cortical_map_temp(:,:,ir,is),2);
         norm_cortical_map(:,:,ir,is) = abs(Threshold_SI_MAP(:,:))./max(max(abs(Threshold_SI_MAP(:,:))));
@@ -447,7 +453,7 @@ for ir = 1:trials
         xlabel('time(s)');
         ylabel('voxels');
         title([save_name_2,save_name_3]);
-        caxis([0.2,cmax])
+        caxis([0.6,cmax]);% 0.6 for RS fig.2g
         set(gcf,'Position',[500 500 980 300 ]);
         saveas(h,[save_name_2,save_name_3,'trail# ',num2str(scans(ir)),' slice# ',num2str(is),'.jpg']);
     end
@@ -796,7 +802,8 @@ roi(:,1) = [25.5,49.1,37.2,23,22.7]; % roi 2 in anatomic
 roi(:,2) = [175,165,111,161,181]; % roi 1 in anatomic
 roi(:,3) = [5.12,2.7,2.81,3.14,2.42]; % background signals(as reference) 
 % function handle of SNR
-snr = @(s,b) (s)/sqrt(b);
+% snr = @(s,b) (s)/sqrt(b);
+snr = @(s,b) (s)/std(b);
 
 % calculation of SNR
 for j = 1:2% 2 rois
